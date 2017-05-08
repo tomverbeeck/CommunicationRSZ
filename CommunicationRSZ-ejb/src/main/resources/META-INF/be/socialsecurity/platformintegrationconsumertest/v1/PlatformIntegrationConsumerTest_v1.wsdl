@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="PlatformIntegrationConsumerTest" targetNamespace="http://socialsecurity.be/platformintegrationconsumertest/v1" xmlns="http://socialsecurity.be/platformintegrationconsumertest/v1" xmlns:err="http://socialsecurity.be/errors/v1" xmlns:soap11="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <wsdl:documentation>Version 1.2</wsdl:documentation>
+    <wsp:Policy wsu:Id="X509" xmlns:sp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+        <sp:AsymmetricBinding>
+            <wsp:Policy>
+                <sp:InitiatorToken>
+                    <wsp:Policy>
+                        <sp:X509Token sp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/AlwaysToRecipient">
+                            <wsp:Policy>
+                                <sp:WssX509V3Token10/>
+                            </wsp:Policy>
+                        </sp:X509Token>
+                    </wsp:Policy>
+                </sp:InitiatorToken>
+                <sp:RecipientToken>
+                    <wsp:Policy>
+                        <sp:X509Token sp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/Never">
+                            <wsp:Policy>
+                                <sp:WssX509V3Token10/>
+                            </wsp:Policy>
+                        </sp:X509Token>
+                    </wsp:Policy>
+                </sp:RecipientToken>
+                <sp:AlgorithmSuite>
+                    <wsp:Policy>
+                        <sp:Basic256/>
+                    </wsp:Policy>
+                </sp:AlgorithmSuite>
+                <sp:Layout>
+                    <wsp:Policy>
+                        <sp:Lax/>
+                    </wsp:Policy>
+                </sp:Layout>
+                <sp:IncludeTimestamp/>
+                <sp:ProtectTokens/>
+                <sp:OnlySignEntireHeadersAndBody/>
+            </wsp:Policy>
+        </sp:AsymmetricBinding>
+        <sp:Wss10>
+            <wsp:Policy>
+                <sp:MustSupportRefKeyIdentifier/>
+                <sp:MustSupportRefIssuerSerial/>
+            </wsp:Policy>
+        </sp:Wss10>
+        <sp:SignedParts>
+            <sp:Body/>
+        </sp:SignedParts>
+    </wsp:Policy>
+    <wsp:Policy wsu:Id="SAML_HOK" xmlns:sp="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+        <sp:AsymmetricBinding>
+            <wsp:Policy>
+                <sp:InitiatorToken>
+                    <wsp:Policy>
+                        <!--If the client framework supports sp:IssuedToken policy assertions, uncomment this block and comment the sp:SamlToken assertion-->
+                        <sp:IssuedToken sp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/AlwaysToRecipient">
+                            <sp:RequestSecurityTokenTemplate />
+                            <wsp:Policy />
+                        </sp:IssuedToken>
+                        <!--<sp:SamlToken sp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/AlwaysToRecipient">-->
+                        <!--<wsp:Policy>-->
+                        <!--<sp:WssSamlV11Token10/>-->
+                        <!--</wsp:Policy>-->
+                        <!--</sp:SamlToken>-->
+                    </wsp:Policy>
+                </sp:InitiatorToken>
+                <sp:RecipientToken>
+                    <wsp:Policy>
+                        <sp:X509Token sp:IncludeToken="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702/IncludeToken/Never">
+                            <wsp:Policy>
+                                <sp:WssX509V3Token10/>
+                            </wsp:Policy>
+                        </sp:X509Token>
+                    </wsp:Policy>
+                </sp:RecipientToken>
+                <sp:AlgorithmSuite>
+                    <wsp:Policy>
+                        <sp:Basic256/>
+                    </wsp:Policy>
+                </sp:AlgorithmSuite>
+                <sp:Layout>
+                    <wsp:Policy>
+                        <sp:Lax/>
+                    </wsp:Policy>
+                </sp:Layout>
+                <sp:IncludeTimestamp/>
+                <sp:ProtectTokens/>
+                <sp:OnlySignEntireHeadersAndBody/>
+            </wsp:Policy>
+        </sp:AsymmetricBinding>
+        <sp:Wss10>
+            <wsp:Policy>
+                <sp:MustSupportRefKeyIdentifier/>
+                <sp:MustSupportRefIssuerSerial/>
+            </wsp:Policy>
+        </sp:Wss10>
+        <sp:SignedParts>
+            <sp:Body/>
+        </sp:SignedParts>
+    </wsp:Policy>
+    <wsdl:types>
+        <xsd:schema>
+            <xsd:import namespace="http://socialsecurity.be/platformintegrationconsumertest/v1" schemaLocation="PlatformIntegration_v1.xsd"/>
+            <xsd:import namespace="http://socialsecurity.be/errors/v1" schemaLocation="../../errors/v1/socsec-errors-schema-v1.xsd"/>
+        </xsd:schema>
+    </wsdl:types>
+    <wsdl:message name="CheckConnectionRequest">
+        <wsdl:part name="CheckConnectionRequest" element="CheckConnectionRequest"/>
+    </wsdl:message>
+    <wsdl:message name="CheckConnectionResponse">
+        <wsdl:part name="CheckConnectionResponse" element="CheckConnectionResponse"/>
+    </wsdl:message>
+    <wsdl:message name="CheckAccessControlRequest">
+        <wsdl:part name="CheckAccessControlRequest" element="CheckAccessControlRequest"/>
+    </wsdl:message>
+    <wsdl:message name="CheckAccessControlResponse">
+        <wsdl:part name="CheckAccessControlResponse" element="CheckAccessControlResponse"/>
+    </wsdl:message>
+    <wsdl:message name="CheckBrokeredAccessControlRequest">
+        <wsdl:part name="CheckBrokeredAccessControlRequest" element="CheckBrokeredAccessControlRequest"/>
+    </wsdl:message>
+    <wsdl:message name="CheckBrokeredAccessControlResponse">
+        <wsdl:part name="CheckBrokeredAccessControlResponse" element="CheckBrokeredAccessControlResponse"/>
+    </wsdl:message>
+    <wsdl:message name="SystemError">
+        <wsdl:part name="fault" element="err:SystemError"/>
+    </wsdl:message>
+    <wsdl:portType name="PlatformIntegrationConsumerTestPortType">
+        <wsdl:operation name="checkConnection">
+            <wsdl:documentation>Operation to check connectivity to the platform on transport-level, including SSL/TLS connection setup.</wsdl:documentation>
+            <wsdl:input message="CheckConnectionRequest"/>
+            <wsdl:output message="CheckConnectionResponse"/>
+            <wsdl:fault name="systemError" message="SystemError"/>
+        </wsdl:operation>
+        <wsdl:operation name="checkAccessControl">
+            <wsdl:documentation>Operation to check conformity to the X.509 Token Profile WS-SecurityPolicy.</wsdl:documentation>
+            <wsdl:input message="CheckAccessControlRequest"/>
+            <wsdl:output message="CheckAccessControlResponse"/>
+            <wsdl:fault name="systemError" message="SystemError"/>
+        </wsdl:operation>
+        <wsdl:operation name="checkBrokeredAccessControl">
+            <wsdl:documentation>Operation to check conformity to the SAML Token Profile WS-SecurityPolicy (Holder of Key).</wsdl:documentation>
+            <wsdl:input message="CheckBrokeredAccessControlRequest"/>
+            <wsdl:output message="CheckBrokeredAccessControlResponse"/>
+            <wsdl:fault name="systemError" message="SystemError"/>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="PlatformIntegrationConsumerTestSOAPBinding" type="PlatformIntegrationConsumerTestPortType">
+        <soap11:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="checkConnection">
+            <soap11:operation soapAction=""/>
+            <wsdl:input>
+                <soap11:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap11:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="systemError">
+                <soap11:fault name="systemError" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="checkAccessControl">
+            <wsdl:documentation>v1.1: added new operation</wsdl:documentation>
+            <soap11:operation soapAction=""/>
+            <wsdl:input>
+                <soap11:body use="literal"/>
+                <wsp:PolicyReference URI="#X509" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap11:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="systemError">
+                <soap11:fault name="systemError" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+        <wsdl:operation name="checkBrokeredAccessControl">
+            <wsdl:documentation>v1.1: added new operation</wsdl:documentation>
+            <soap11:operation soapAction=""/>
+            <wsdl:input>
+                <soap11:body use="literal"/>
+                <wsp:PolicyReference URI="#SAML_HOK" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap11:body use="literal"/>
+            </wsdl:output>
+            <wsdl:fault name="systemError">
+                <soap11:fault name="systemError" use="literal"/>
+            </wsdl:fault>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="PlatformIntegrationConsumerTestService">
+        <wsdl:port name="PlatformIntegrationConsumerTestSOAP11" binding="PlatformIntegrationConsumerTestSOAPBinding">
+            <soap11:address location="https://services-sim.socialsecurity.be/PlatformIntegrationConsumerTest/v1"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

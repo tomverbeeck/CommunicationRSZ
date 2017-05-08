@@ -1,0 +1,755 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema version="1.9" targetNamespace="http://socialsecurity.be/presenceregistration/schemas/v1" xmlns="http://socialsecurity.be/presenceregistration/schemas/v1" attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="PresenceRegistrationSubmitType">
+    <xs:annotation>
+      <xs:documentation>Definition of the Presence Registration Type</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="RegistrationDate" type="RegistrationDateType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Date for which you register. Can only be today or tomorrow. Optional, if left out it will consider the registration is for today.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:choice>
+        <xs:sequence>
+          <xs:element name="INSS" type="INSSType">
+            <xs:annotation>
+              <xs:documentation>Social Security Number</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="CompanyID" type="CompanyIDType">
+            <xs:annotation>
+              <xs:documentation>KBO/BCE number of the employer</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+        <xs:element name="LimosaId" type="LimosaIdType">
+          <xs:annotation>
+            <xs:documentation>Limosa number defining the workrelation between a foreign employee, a foreign company and a potential belgian client</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:choice>
+      <xs:element name="WorkPlaceId" type="WorkPlaceIdType">
+        <xs:annotation>
+          <xs:documentation>Identification number of the site as defined in Declaration of Works (DDT/AVW)</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="ClientPresenceRegistrationReference" type="ClientReferenceType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Optionally you can supply your own Client Presence Registration Reference</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PresenceRegistrationConsultSubmitType">
+    <xs:annotation>
+      <xs:appinfo>v1.9: complexType added</xs:appinfo>
+      <xs:documentation>Definition of the Presence Registration Type</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="RegistrationDate" type="RegistrationDateType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Date for which you register. Can only be today or tomorrow. Optional, if left out it will consider the registration is for today.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:sequence>
+        <xs:element name="INSS" type="INSSType" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>Social Security Number</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="CompanyID" type="CompanyIDType" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>KBO/BCE number of the employer</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="LimosaId" type="LimosaIdType" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation>Limosa number defining the workrelation between a foreign employee, a foreign company and a potential belgian client</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+      <xs:element name="WorkPlaceId" type="WorkPlaceIdType">
+        <xs:annotation>
+          <xs:documentation>Identification number of the site as defined in Declaration of Works (DDT/AVW)</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="ClientPresenceRegistrationReference" type="ClientReferenceType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Optionally you can supply your own Client Presence Registration Reference</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RequestErrorType">
+    <xs:annotation>
+      <xs:documentation>List of form errors in request</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Error" type="Error" maxOccurs="10"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Error">
+    <xs:annotation>
+      <xs:documentation>List of form errors in request</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="ErrorCode" type="ErrorCode">
+        <xs:annotation>
+          <xs:documentation>The error code in request</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="ErrorDescription" type="ErrorDescription">
+        <xs:annotation>
+          <xs:documentation>The error description in request</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PresenceRegistrationType">
+    <xs:annotation>
+      <xs:documentation>Presence Registration submitted Type</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:annotation>
+        <xs:appinfo>v1.9: element PresenceRegistrationSubmitted removed</xs:appinfo>
+      </xs:annotation>
+      <xs:choice>
+        <xs:annotation>
+          <xs:appinfo>v1.9: choice added</xs:appinfo>
+        </xs:annotation>
+        <xs:element name="PresenceRegistrationSubmitted" type="PresenceRegistrationSubmitType">
+          <xs:annotation>
+            <xs:documentation>The content of the original presenceRegistrationSubmit</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="PresenceRegistrationConsultSubmitted" type="PresenceRegistrationConsultSubmitType">
+          <xs:annotation>
+            <xs:documentation>The content of the original presenceRegistrationSubmit for consult</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:choice>
+      <xs:element name="Sector" type="WorkSectorType" minOccurs="0">
+        <xs:annotation>
+          <xs:appinfo>v1.8: element added</xs:appinfo>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="INSS" type="INSSType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>This the last inss know for the worker. It's the same as in the submitted declaration if the inss has never changed. It can be not present in case of a presence registration with LimosaId</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="PresenceRegistrationId" type="PresenceRegistrationIdType">
+        <xs:annotation>
+          <xs:documentation>Number Reference of Presence Registration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="CreationDate" type="CreationDateType">
+        <xs:annotation>
+          <xs:documentation>Creation date and time of Presence Registration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Channel" type="ChannelType">
+        <xs:annotation>
+          <xs:documentation>Channel of submitted PresenceRegistration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="LastValidation" type="ValidationType"/>
+      <xs:element name="ValidationHistory" type="ValidationHistoryType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>List of validation attempts for the presence registration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Sender" type="SenderType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Contains the sender information of the Presence Registration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ValidationHistoryType">
+    <xs:annotation>
+      <xs:documentation>Validation Historique of submitted presence registration</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Validation" type="ValidationType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CancelPresenceRequestType">
+    <xs:annotation>
+      <xs:documentation>Presence Registration submitted to cancel</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="PresenceRegistrationId" type="PresenceRegistrationIdType"/>
+      <xs:element name="CancellationReason" type="CancelReasonType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RegisterPresenceRegistrationResponse">
+    <xs:annotation>
+      <xs:documentation>Presence Registration submitted</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="PresenceRegistration" type="PresenceRegistrationType"/>
+      <xs:element name="PresenceRegistrationError" type="RegisterPresenceRegistrationErrorType"/>
+    </xs:choice>
+  </xs:complexType>
+  <xs:complexType name="RegisterPresenceRegistrationErrorType">
+    <xs:annotation>
+      <xs:documentation>Presence Registration submitted and a list of generated errors</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="PresenceRegistrationSubmitted" type="PresenceRegistrationSubmitType"/>
+      <xs:element name="ErrorList" type="RequestErrorType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="SearchPresenceRegistrationErrorType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation>Search Presence Registration request and a list of generated errors</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="ErrorList" type="RequestErrorType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CancelPresenceRegistrationResponse">
+    <xs:annotation>
+      <xs:documentation>Cancel Presence Registration submitted</xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="PresenceRegistration" type="PresenceRegistrationType"/>
+      <xs:element name="PresenceRegistrationError" type="CancelPresenceRegistrationErrorType"/>
+    </xs:choice>
+  </xs:complexType>
+  <xs:complexType name="CancelPresenceRegistrationErrorType">
+    <xs:annotation>
+      <xs:documentation>Presence Registration submitted and a list of generated errors</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="CancelPresenceRequest" type="CancelPresenceRequestType"/>
+      <xs:element name="ErrorList" type="RequestErrorType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="SearchPresencesRequestType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation>Search Presence Registration request type</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="SearchPresenceRegistrationCriteria" type="SearchPresenceRegistrationCriteria">
+        <xs:annotation>
+          <xs:documentation>Criteria for presenceRegistration search Request</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="PaginationProperties" type="PaginationPropertiesType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Criteria for result Pagination, if no criteria, the first row and ascending order must be used</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="SortingProperties" type="SortingPropertiesType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Sorting criteria to use when returning response</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="SearchPresenceRegistrationCriteria">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation>Search Presence Registration response Type</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="INSS" type="INSSType" minOccurs="0"/>
+      <xs:element name="CompanyID" type="CompanyIDType" minOccurs="0"/>
+      <xs:element name="WorkPlaceId" type="WorkPlaceIdType" minOccurs="0"/>
+      <xs:element name="StatusList" type="StatusListType" minOccurs="0"/>
+      <xs:element name="RemarkList" type="SearchRemarkListType" minOccurs="0"/>
+      <xs:element name="RegistrationPeriodList" type="RegistrationPeriodListType" minOccurs="0"/>
+      <xs:element name="CreationStartDate" type="CreationDateType" minOccurs="0"/>
+      <xs:element name="CreationEndDate" type="CreationDateType" minOccurs="0"/>
+      <xs:element name="Sector" type="WorkSectorType" minOccurs="0">
+        <xs:annotation>
+          <xs:appinfo>v1.8: element added</xs:appinfo>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="SearchPresencesResponseType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation>Search Presence Registration response Type</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="SearchPresencesRequest" type="SearchPresencesRequestType">
+        <xs:annotation>
+          <xs:documentation>The content of the original presenceRegistration Request</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:choice>
+        <xs:element name="PresenceRegistrationList" type="PresenceRegistrationList"/>
+        <xs:element name="PresenceRegistrationError" type="SearchPresenceRegistrationErrorType" minOccurs="0"/>
+      </xs:choice>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PresenceRegistrationList">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation>List of presence registration that match the search request criteria</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="PresenceRegistrationResultCount" type="PresenceRegistrationResultCountType">
+        <xs:annotation>
+          <xs:documentation>List of the registered presence registration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="PresenceRegistration" type="PresenceRegistrationType" minOccurs="0" maxOccurs="500">
+        <xs:annotation>
+          <xs:documentation>List of the registered presence registration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RegistrationPeriodListType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation>List of Date Interval used to search Presence Registration</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="RegistrationPeriod" type="RegistrationPeriodType" maxOccurs="31">
+        <xs:annotation>
+          <xs:documentation>Interval Date of Presence Registration search</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RegistrationPeriodType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation>Date Interval for searching Presence Registration</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="RegistrationPeriodStartDate" type="RegistrationDateType">
+        <xs:annotation>
+          <xs:documentation>Start Interval Date of Presence Registration search</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="RegistrationPeriodEndDate" type="RegistrationDateType">
+        <xs:annotation>
+          <xs:documentation>End Interval Date of Presence Registration search</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PresenceRegistration">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation>Response Registration</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="INSS" type="INSSType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>This the last inss know for the worker. It's the same as in the submitted declaration if the inss has never changed. It can be not present in case of a presence registration with LimosaId</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="PresenceRegistrationId" type="PresenceRegistrationIdType">
+        <xs:annotation>
+          <xs:documentation>Number Reference of Presence Registration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="CreationDate" type="CreationDateType">
+        <xs:annotation>
+          <xs:documentation>Creation date and time of Presence Registration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="Channel" type="ChannelType">
+        <xs:annotation>
+          <xs:documentation>Channel of submitted PresenceRegistration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="LastValidation" type="ValidationType"/>
+      <xs:element name="ValidationHistory" type="ValidationHistoryType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>List of validation attempts for the presence registration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="PaginationPropertiesType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation/>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="FirstRow" type="FirstRowType">
+        <xs:annotation>
+          <xs:documentation>The first row from what sort of result will be done, by default first row 0 is used</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="FetchSize" type="FetchSizeType">
+        <xs:annotation>
+          <xs:documentation>The number of records returned by page, by default 50 records will be returned</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="SortingPropertiesType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation/>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="SortDirection" type="SortDirectionType">
+        <xs:annotation>
+          <xs:documentation>Sort result according to choice of direction, by default sort is Ascending</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="SortCriteria" type="SortCriteriaType">
+        <xs:annotation>
+          <xs:documentation>Sorting result based on criteria, by default criteria is ID</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="StatusListType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation/>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Status" type="StatusType" maxOccurs="4">
+        <xs:annotation>
+          <xs:documentation/>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="SearchRemarkListType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation/>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Remark" type="SearchRemarkType" maxOccurs="17">
+        <xs:annotation>
+          <xs:documentation/>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="GetPresenceRegistrationRequestType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation/>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="PresenceRegistrationId" type="PresenceRegistrationIdType">
+        <xs:annotation>
+          <xs:documentation/>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="GetPresenceRegistrationResponseType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation/>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="GetPresenceRegistrationRequest" type="GetPresenceRegistrationRequestType">
+        <xs:annotation>
+          <xs:documentation>The Search Criteria submitted</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="GetPresenceRegistrationType" type="GetPresenceRegistrationType">
+        <xs:annotation>
+          <xs:documentation>The Get presence registration response</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="GetPresenceRegistrationType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: complexType added</xs:appinfo>
+      <xs:documentation>Get presence registration response type</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="PresenceRegistrationType" type="PresenceRegistrationType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>The Get presence registration response</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="FetchSizeType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: simpleType added</xs:appinfo>
+      <xs:documentation>Number presence registration to return</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:int">
+      <xs:totalDigits value="9"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="FirstRowType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: simpleType added</xs:appinfo>
+      <xs:documentation>Number for first row to beginning display</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:int">
+      <xs:totalDigits value="9"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PresenceRegistrationResultCountType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: simpleType added</xs:appinfo>
+      <xs:documentation>Number presence registration founded</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:long">
+      <xs:totalDigits value="9"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="INSSType">
+    <xs:annotation>
+      <xs:documentation>Social Security Number</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="\d{11}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CompanyIDType">
+    <xs:annotation>
+      <xs:documentation>KBO/BCE number of the employer</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:long">
+      <xs:totalDigits value="10"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="WorkPlaceIdType">
+    <xs:annotation>
+      <xs:documentation>Identification number of the site as defined in Declaration of Works (DDT/AVW)</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="13"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="RegistrationDateType">
+    <xs:annotation>
+      <xs:documentation>Date for which you make the (planned) registration. Only date of today and tomorrow are accepted. If omitted it will default to today</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:date"/>
+  </xs:simpleType>
+  <xs:simpleType name="ClientReferenceType">
+    <xs:annotation>
+      <xs:documentation>Custom Reference you may send with your registration</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="24"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="LimosaIdType">
+    <xs:annotation>
+      <xs:documentation>Limosa number defining the workrelation between a foreign employee, a foreign company and a potential belgian client</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:simpleType name="StatusType">
+    <xs:annotation>
+      <xs:documentation>Status of presence registration to search. VALIDATED =&gt; successfully regsitered and the content has been validated wihtout remarks. FAILED =&gt; uccessfully regsitered but the content has been validated with remarks.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SUCCESSFULLY REGISTERED"/>
+      <xs:enumeration value="SUCCESSFULLY CANCELLED"/>
+      <xs:enumeration value="VALIDATED">
+        <xs:annotation>
+          <xs:appinfo>v1.5: enumeration added</xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="FAILED"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SearchRemarkType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: simpleType added</xs:appinfo>
+      <xs:documentation>Remark Type for a PresenceRegistration</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="RELATED DIMONA NOT OK"/>
+      <xs:enumeration value="GIVEN INSS IS NOT THE FOUNDER OF THE COMPANY"/>
+      <xs:enumeration value="EMPLOYER IS NOT KNOWN AS COMPANY FOUNDER"/>
+      <xs:enumeration value="THE COMPANY DOESN'T EXISTS"/>
+      <xs:enumeration value="INDEPENDANT IS NOT KNOWN AS COMPANY FOUNDER"/>
+      <xs:enumeration value="LIMOSA ID IS NOT KNOWN"/>
+      <xs:enumeration value="LIMOSA ID IS NOT ACTIVE AT DATE"/>
+      <xs:enumeration value="NISS-BIS IS NOT KNOWN IN LIMOSA"/>
+      <xs:enumeration value="NISS-BIS IS NOT ACTIVE AT THIS DATE IN LIMOSA"/>
+      <xs:enumeration value="DUC IS NOT EXISTING"/>
+      <xs:enumeration value="DUC IS NOT ACTIVE AT THIS DATE"/>
+      <xs:enumeration value="COMPANY IS NOT KNOWN  AS BUILDER OR  SUBCONTRACTOR IN THIS DUC"/>
+      <xs:enumeration value="SITE IS NOT SUBJECT TO PRESENCE REGISTRATION"/>
+      <xs:enumeration value="SAME DECLARATION HAS ALREADY BEEN REGISTERED"/>
+      <xs:enumeration value="NISS IS NOT KNOW IN THE NATIONAL REGISTER"/>
+      <xs:enumeration value="EMPLOYER NOT ACTIVE"/>
+      <xs:enumeration value="THE COMPANY ID ASSOCIATED AT A NOT ACTIVE CONTRACT"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SortCriteriaType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: simpleType added</xs:appinfo>
+      <xs:documentation>Result status for a PresenceRegistration</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ID"/>
+      <xs:enumeration value="REGISTRATION DATE"/>
+      <xs:enumeration value="CREATION DATE"/>
+      <xs:enumeration value="STATUS"/>
+      <xs:enumeration value="PLACE OF WORK"/>
+      <xs:enumeration value="COMPANY ID"/>
+      <xs:enumeration value="CHANNEL"/>
+      <xs:enumeration value="SENDER ID"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SortDirectionType">
+    <xs:annotation>
+      <xs:appinfo>v1.5: simpleType added</xs:appinfo>
+      <xs:documentation>Result status for a PresenceRegistration</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ASCENDING"/>
+      <xs:enumeration value="DESCENDING"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CancelReasonType">
+    <xs:annotation>
+      <xs:documentation>PresenceRegistration cancelRaison(Holiday, Disease, Planning, C32a, Other..)</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="15"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ChannelType">
+    <xs:annotation>
+      <xs:appinfo>v1.6: simpleType changed</xs:appinfo>
+      <xs:documentation>Channel of submitted PresenceRegistration</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:simpleType name="CreationDateType">
+    <xs:annotation>
+      <xs:documentation>Creation date and time of Presence Registration</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:dateTime"/>
+  </xs:simpleType>
+  <xs:simpleType name="ValidationDateType">
+    <xs:annotation>
+      <xs:documentation>Validation date and time of Presence Registration</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:dateTime"/>
+  </xs:simpleType>
+  <xs:simpleType name="PresenceRegistrationIdType">
+    <xs:annotation>
+      <xs:documentation>Number Reference of Presence Registration</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:long">
+      <xs:totalDigits value="15"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ErrorCode">
+    <xs:annotation>
+      <xs:documentation>The error code in request</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:simpleType name="ErrorDescription">
+    <xs:annotation>
+      <xs:documentation>The error description in request</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:complexType name="ValidationType">
+    <xs:annotation>
+      <xs:documentation>Validation Type of submitted presence registration</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="Status" type="StatusType">
+        <xs:annotation>
+          <xs:documentation>Result status for a PresenceRegistration</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="ValidationDate" type="ValidationDateType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Contains the Validation date if the presence registration has been treated</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="RemarkList" type="RemarkListType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>List of Remarks if the presence registration has been treated</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RemarkListType">
+    <xs:annotation>
+      <xs:documentation>The Remark generated during the validation of submitted presence registration</xs:documentation>
+    </xs:annotation>
+    <xs:sequence maxOccurs="10">
+      <xs:element name="Remark" type="RemarkType">
+        <xs:annotation>
+          <xs:documentation>Remark Description</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="RemarkType">
+    <xs:annotation>
+      <xs:documentation>Remark generated during validation of submitted presenceregistration</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:complexType name="SenderType">
+    <xs:annotation>
+      <xs:appinfo>v1.6: complexType added</xs:appinfo>
+      <xs:documentation>bloc containing informations about the sender of the declaration</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="SenderId" type="UserIDType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Id of the declaration's sender</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="SenderCompanyId" type="CompanyIDType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>CompanyID of the declaration's sender</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="SenderUserType" type="UserType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Type of user of the declaration's sender</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="UserIDType">
+    <xs:annotation>
+      <xs:appinfo>v1.6: simpleType added</xs:appinfo>
+      <xs:documentation>Id of a user</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:simpleType name="UserType">
+    <xs:annotation>
+      <xs:appinfo>v1.6: simpleType added</xs:appinfo>
+      <xs:documentation>Type of a user</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string"/>
+  </xs:simpleType>
+  <xs:simpleType name="WorkSectorType">
+    <xs:annotation>
+      <xs:appinfo>v1.8: simpleType added</xs:appinfo>
+      <xs:documentation>Employment sector of the concerend workplace
+        1 = Construction work
+        2 = Security / Guarding
+        3 = Meat</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:int">
+      <xs:totalDigits value="3"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

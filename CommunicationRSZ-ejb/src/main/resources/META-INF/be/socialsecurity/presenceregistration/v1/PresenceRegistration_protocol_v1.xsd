@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema version="1.9" targetNamespace="http://socialsecurity.be/presenceregistration/v1" xmlns="http://socialsecurity.be/presenceregistration/v1" attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:type="http://socialsecurity.be/presenceregistration/schemas/v1" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:import namespace="http://socialsecurity.be/presenceregistration/schemas/v1" schemaLocation="../schemas/v1/PresenceRegistration_types_v1.xsd"/>
+  <xs:element name="RegisterPresencesRequest">
+    <xs:annotation>
+      <xs:documentation>List of Presence Registration to submit</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="PresenceRegistrationRequest" type="type:PresenceRegistrationSubmitType" maxOccurs="200"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RegisterPresencesResponse">
+    <xs:annotation>
+      <xs:documentation>Response List of submitted Presence Registration</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="PresenceRegistrationResponse" type="type:RegisterPresenceRegistrationResponse" maxOccurs="200"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CancelPresencesRequest">
+    <xs:annotation>
+      <xs:documentation>List of Presence Registration to cancel</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="CancelPresenceRequest" type="type:CancelPresenceRequestType" maxOccurs="200"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="CancelPresencesResponse">
+    <xs:annotation>
+      <xs:documentation>Presence Registration Cancels submitted</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="CancelPresenceResponse" type="type:CancelPresenceRegistrationResponse" maxOccurs="200"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SearchPresencesRequest">
+    <xs:annotation>
+      <xs:appinfo>v1.5: element added</xs:appinfo>
+      <xs:documentation>Search Presence Registration request</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="SearchPresenceRequest" type="type:SearchPresencesRequestType"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SearchPresencesResponse">
+    <xs:annotation>
+      <xs:appinfo>v1.5: element added</xs:appinfo>
+      <xs:documentation>Search Presence Registration response</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="SearchPresencesResponseType" type="type:SearchPresencesResponseType"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetPresenceRegistrationRequest">
+    <xs:annotation>
+      <xs:appinfo>v1.5: element added</xs:appinfo>
+      <xs:documentation>Search Presence Registration request based on ID</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="GetPresenceRegistrationRequest" type="type:GetPresenceRegistrationRequestType"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetPresenceRegistrationResponse">
+    <xs:annotation>
+      <xs:appinfo>v1.5: element added</xs:appinfo>
+      <xs:documentation>Search Presence Registration response mapped from</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="GetPresenceRegistrationResponseType" type="type:GetPresenceRegistrationResponseType"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

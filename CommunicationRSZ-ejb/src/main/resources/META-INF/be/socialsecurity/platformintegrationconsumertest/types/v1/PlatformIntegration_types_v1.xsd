@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema version="1.2" targetNamespace="http://socialsecurity.be/platformintegrationconsumertest/types/v1" xmlns="http://socialsecurity.be/platformintegrationconsumertest/types/v1" attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="IntegrationTestMessage">
+    <xsd:annotation>
+      <xsd:documentation xml:lang="en">Base message format reused in all integration check operations</xsd:documentation>
+    </xsd:annotation>
+    <xsd:sequence>
+      <xsd:element name="Message" type="MessageType">
+        <xsd:annotation>
+          <xsd:documentation xml:lang="en">Free message chosen by the consumer, which will be echoed in the response</xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+      <xsd:element name="Timestamp" type="xsd:dateTime">
+        <xsd:annotation>
+          <xsd:documentation xml:lang="en">Creation timestamp of the IntegrationTestMessage</xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+      <xsd:element name="AuthenticatedConsumer" type="xsd:string" minOccurs="0">
+        <xsd:annotation>
+          <xsd:documentation xml:lang="en">Detail about the authenticated consumer invoking the service</xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:simpleType name="MessageType">
+    <xsd:annotation>
+      <xsd:documentation xml:lang="en">Free text message with length restrictions</xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string">
+      <xsd:minLength value="10"/>
+      <xsd:maxLength value="50"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+</xsd:schema>

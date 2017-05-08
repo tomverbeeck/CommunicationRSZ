@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema version="1.2" targetNamespace="http://socialsecurity.be/platformintegrationconsumertest/v1" attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:types="http://socialsecurity.be/platformintegrationconsumertest/types/v1" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import namespace="http://socialsecurity.be/platformintegrationconsumertest/types/v1" schemaLocation="../types/v1/PlatformIntegration_types_v1.xsd"/>
+  <xsd:element name="CheckConnectionRequest" type="types:IntegrationTestMessage">
+    <xsd:annotation>
+      <xsd:documentation xml:lang="en">Request message to check transport connectivity with the platform.</xsd:documentation>
+    </xsd:annotation>
+  </xsd:element>
+  <xsd:element name="CheckConnectionResponse" type="types:IntegrationTestMessage">
+    <xsd:annotation>
+      <xsd:documentation xml:lang="en">Response message, echoing the message from the request.</xsd:documentation>
+    </xsd:annotation>
+  </xsd:element>
+  <xsd:element name="CheckAccessControlRequest" type="types:IntegrationTestMessage">
+    <xsd:annotation>
+      <xsd:documentation xml:lang="en">Request message to check X.509 Token profile security policy.</xsd:documentation>
+    </xsd:annotation>
+  </xsd:element>
+  <xsd:element name="CheckAccessControlResponse" type="types:IntegrationTestMessage">
+    <xsd:annotation>
+      <xsd:documentation xml:lang="en">Response message, echoing the request message and the identity retrieved from the inbound X.509 certificate.</xsd:documentation>
+    </xsd:annotation>
+  </xsd:element>
+  <xsd:element name="CheckBrokeredAccessControlRequest" type="types:IntegrationTestMessage">
+    <xsd:annotation>
+      <xsd:documentation xml:lang="en">Request message to check the SAML HOK security policy.</xsd:documentation>
+    </xsd:annotation>
+  </xsd:element>
+  <xsd:element name="CheckBrokeredAccessControlResponse" type="types:IntegrationTestMessage">
+    <xsd:annotation>
+      <xsd:documentation xml:lang="en">Response message, echoing the request message and the identity retrieved from the inbound SAML assertion.</xsd:documentation>
+    </xsd:annotation>
+  </xsd:element>
+</xsd:schema>
