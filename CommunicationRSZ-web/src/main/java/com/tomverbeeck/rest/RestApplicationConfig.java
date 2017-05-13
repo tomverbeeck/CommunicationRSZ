@@ -12,7 +12,7 @@ import javax.ws.rs.ApplicationPath;
  *
  * @author Tom Verbeeck
  */
-@ApplicationPath("/rest")
+@ApplicationPath("rest")
 public class RestApplicationConfig extends javax.ws.rs.core.Application{
     
     @Override
@@ -29,5 +29,6 @@ public class RestApplicationConfig extends javax.ws.rs.core.Application{
      * If required, comment out calling this method in getClasses().
      */
     private void addRestResourceClasses(Set<Class<?>> resources) {
+        resources.add(com.tomverbeeck.rest.RegisterFacadeREST.class);
     }
 }

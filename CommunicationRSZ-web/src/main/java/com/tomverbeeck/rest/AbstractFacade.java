@@ -16,7 +16,7 @@ public abstract class AbstractFacade<T> {
 
     private Class<T> entityClass;
     
-    protected final String PU = "com.tomverbeeck_DummyRSZ-ejb_ejb_1.0-SNAPSHOTPU";
+    protected final String PU = "CommunicationRSZ-ejb_ejb_1.0-SNAPSHOTPU";
 
     public AbstractFacade(Class<T> entityClass) {
         this.entityClass = entityClass;

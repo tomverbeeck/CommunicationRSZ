@@ -5,7 +5,6 @@
  */
 package com.tomverbeeck.rest;
 
-import be.socialsecurity.errors.v1.LocalisedString;
 import be.socialsecurity.presenceregistration.v1.BusinessError;
 import be.socialsecurity.presenceregistration.v1.CancelPresencesRequest;
 import be.socialsecurity.presenceregistration.v1.CancelPresencesResponse;
@@ -20,11 +19,11 @@ import com.tomverbeeck.beans.RszFacade;
 import com.tomverbeeck.entities.Rsz;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.mail.MessagingException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.ws.rs.GET;
@@ -82,7 +81,7 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
     @GET
     @Produces(MediaType.APPLICATION_XML)
     @Path("addRegisterPresence")
-    public RegisterPresencesRequest getRszXml() {
+    public RegisterPresencesRequest addRegisterRequest() {
         rszBean.addRequest();
         return rszBean.getRegisterPresenceList();
     }
@@ -90,7 +89,7 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
     @GET
     @Produces(MediaType.APPLICATION_XML)
     @Path("addCancelPresence")
-    public CancelPresencesRequest getRszXml(@QueryParam("inss") String inss, @QueryParam("reason") String reason, @QueryParam("workplaceid") String workplaceID) {
+    public CancelPresencesRequest addCancelRequest(@QueryParam("inss") String inss, @QueryParam("reason") String reason, @QueryParam("workplaceid") String workplaceID) {
         GregorianCalendar cal = new GregorianCalendar();
         XMLGregorianCalendar xmlDate = null;
         try {
@@ -118,7 +117,7 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
     @GET
     @Produces(MediaType.APPLICATION_XML)
     @Path("register")
-    public RegisterPresencesResponse registerRequest() throws BusinessError, SystemError {
+    public RegisterPresencesResponse registerRequest() throws MessagingException {
         checkTime();
 
         System.out.println("registerRequest");
@@ -131,11 +130,20 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
             return new RegisterPresencesResponse();
         }
 
-        RegisterPresencesResponse response;
+        RegisterPresencesResponse response = new RegisterPresencesResponse();
         if (port == null) {
-            return new RegisterPresencesResponse();
+            return response;
         } else {
-            response = port.registerPresences(rszBean.getRegisterPresenceList());
+            try {
+                response = port.registerPresences(rszBean.getRegisterPresenceList());
+            } catch (SystemError ex) {
+                if(!rszBean.systemOnline(ex)){
+                    return new RegisterPresencesResponse();
+                }
+                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (BusinessError ex) {
+                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         rszBean.processRegisterPresence(response);
@@ -147,7 +155,7 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
     @GET
     @Produces(MediaType.APPLICATION_XML)
     @Path("cancelRequest")
-    public CancelPresencesResponse cancelRequest() throws BusinessError, SystemError {
+    public CancelPresencesResponse cancelRequest() throws MessagingException {
         checkTime();
 
         System.out.println("cancelRequest");
@@ -160,12 +168,20 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
             return new CancelPresencesResponse();
         }
 
-        CancelPresencesResponse response;
+        CancelPresencesResponse response = new CancelPresencesResponse();
         if (port == null) {
             System.out.println("Port is null");
-            return new CancelPresencesResponse();
         } else {
-            response = port.cancelPresences(rszBean.getCancelPresenceList());
+            try {
+                response = port.cancelPresences(rszBean.getCancelPresenceList());
+            } catch (SystemError ex) {
+                if(!rszBean.systemOnline(ex)){
+                    return new CancelPresencesResponse();
+                }
+                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (BusinessError ex) {
+                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         rszBean.processCancelPresence(response);
@@ -177,7 +193,8 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
     @GET
     @Produces(MediaType.APPLICATION_XML)
     @Path("getRequest")
-    public GetPresenceRegistrationResponse getRequest(@QueryParam("inss") String inss, @QueryParam("workplaceid") String workplaceID) throws BusinessError, SystemError {
+    public GetPresenceRegistrationResponse getRequest(@QueryParam("inss") String inss, @QueryParam("workplaceid") String workplaceID) throws BusinessError, SystemError, MessagingException {
+        System.out.println("Check Time");
         checkTime();
 
         System.out.println("getRequest");
@@ -189,16 +206,21 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
         GetPresenceRegistrationResponse response;
         if (port == null && rszBean.getGetPresenceRequest().getGetPresenceRegistrationRequest() == null) {
             System.out.println("Port or request is null");
-            return new GetPresenceRegistrationResponse();
+            response =  new GetPresenceRegistrationResponse();
         } else {
             response = new GetPresenceRegistrationResponse();
             rszBean.getPrecensesRequest(inss, workplaceID);
             try {
                 response = port.getPresenceRegistration(rszBean.getGetPresenceRequest());
-            } catch (SystemError e) {
-                printLocalisedString(e.getFaultInfo().getMessage());
-            } catch (BusinessError e) {
-                printLocalisedString(e.getFaultInfo().getMessage());
+            } catch (SystemError ex) {
+                if(!rszBean.systemOnline(ex)){
+                    return new GetPresenceRegistrationResponse();
+                }
+                rszBean.printLocalisedString(ex.getFaultInfo().getMessage());
+                //Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (BusinessError ex) {
+                rszBean.printLocalisedString(ex.getFaultInfo().getMessage());
+                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
@@ -210,7 +232,8 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
     @Produces(MediaType.APPLICATION_XML)
     @Path("searchPreference")
     public SearchPresencesResponse searchPresence(@QueryParam("type") String typeQuery,
-            @QueryParam("value") String valueQuery) throws SystemError, BusinessError {
+            @QueryParam("value") String valueQuery) throws MessagingException {
+        System.out.println("Check Time");
         checkTime();
 
         System.out.println("getRequest");
@@ -219,13 +242,21 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
             System.out.println("Service is zero");
         }
 
-        SearchPresencesResponse response;
+        SearchPresencesResponse response = new SearchPresencesResponse();
         if (port == null && rszBean.getGetPresenceRequest().getGetPresenceRegistrationRequest() == null) {
             System.out.println("Port or request is null");
-            return new SearchPresencesResponse();
         } else {
-            rszBean.searchPreferences(typeQuery, valueQuery);
-            response = port.searchPresences(rszBean.getSearchRequest());
+            try {
+                rszBean.searchPreferences(typeQuery, valueQuery);
+                response = port.searchPresences(rszBean.getSearchRequest());
+            } catch (SystemError ex) {
+                if(!rszBean.systemOnline(ex)){
+                    return new SearchPresencesResponse();
+                }
+                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (BusinessError ex) {
+                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         return response;
@@ -254,15 +285,6 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
             Client client = ClientProxy.getClient(port);
             client.getInInterceptors().add(new LoggingInInterceptor());
             client.getOutInterceptors().add(new LoggingOutInterceptor());
-    }
-
-    private void printLocalisedString(List<LocalisedString> s) {
-        String error = "";
-        for (LocalisedString fault : s) {
-            error += fault.getValue();
-            error += " ";
-        }
-        System.out.println("Error: '" + error  + "'");
     }
 
     @Override

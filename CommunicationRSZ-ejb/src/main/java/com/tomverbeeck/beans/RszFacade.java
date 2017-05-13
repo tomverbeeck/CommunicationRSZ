@@ -5,6 +5,7 @@
  */
 package com.tomverbeeck.beans;
 
+import be.socialsecurity.errors.v1.LocalisedString;
 import be.socialsecurity.presenceregistration.schemas.v1.CancelPresenceRegistrationResponse;
 import be.socialsecurity.presenceregistration.schemas.v1.CancelPresenceRequestType;
 import be.socialsecurity.presenceregistration.schemas.v1.GetPresenceRegistrationRequestType;
@@ -22,6 +23,7 @@ import be.socialsecurity.presenceregistration.v1.GetPresenceRegistrationResponse
 import be.socialsecurity.presenceregistration.v1.RegisterPresencesRequest;
 import be.socialsecurity.presenceregistration.v1.RegisterPresencesResponse;
 import be.socialsecurity.presenceregistration.v1.SearchPresencesRequest;
+import be.socialsecurity.presenceregistration.v1.SystemError;
 import com.tomverbeeck.entities.Rsz;
 import com.tomverbeeck.entities.RszRegistered;
 import java.util.Calendar;
@@ -32,6 +34,7 @@ import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Stateless;
+import javax.mail.MessagingException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -57,6 +60,9 @@ public class RszFacade extends AbstractFacade<Rsz> {
 
     @EJB
     RszRegisteredFacade registeredBean;
+    
+    @EJB
+    private MailSender mailSender;
 
     @Override
     protected EntityManager getEntityManager() {
@@ -344,5 +350,26 @@ public class RszFacade extends AbstractFacade<Rsz> {
             returnString = toFilter;
         }
         return returnString;
+    }
+    
+    public boolean systemOnline(SystemError error) throws MessagingException{
+        boolean returnBool = true;
+        printLocalisedString(error.getFaultInfo().getMessage());
+        
+        if(error.getFaultInfo().getCode().equals("SOA-02001")){
+            mailSender.sendMailServiceDesk();
+            returnBool = false;
+        }
+        
+        return returnBool;
+    }
+    
+    public void printLocalisedString(List<LocalisedString> s) {
+        String error = "";
+        for (LocalisedString fault : s) {
+            error += fault.getValue();
+            error += " ";
+        }
+        System.out.println("Error: '" + error  + "'");
     }
 }
