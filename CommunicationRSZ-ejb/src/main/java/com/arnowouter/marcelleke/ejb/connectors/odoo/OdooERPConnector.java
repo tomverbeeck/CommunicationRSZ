@@ -5,7 +5,8 @@
  */
 package com.arnowouter.marcelleke.ejb.connectors.odoo;
 
-import com.arnowouter.javaodoo.OdooConnector;
+import com.arnowouter.javaodoo.IOdooConnector;
+import com.arnowouter.javaodoo.client.OdooConnector;
 import com.arnowouter.javaodoo.exceptions.OdooConnectorException;
 import com.arnowouter.marcelleke.domain.entities.AddressEntity;
 import com.arnowouter.marcelleke.ejb.connectors.ErpSpecificConnectorInterface;
@@ -28,7 +29,7 @@ import java.util.List;
  */
 public class OdooERPConnector implements ErpSpecificConnectorInterface {
     
-    OdooConnector odooConnector;
+    IOdooConnector odooConnector;
     private int odooUserID;
     //Odoo connection parameters
     private String protocol;
