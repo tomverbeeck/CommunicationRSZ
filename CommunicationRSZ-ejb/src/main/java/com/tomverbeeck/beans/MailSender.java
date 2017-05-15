@@ -44,6 +44,28 @@ public class MailSender {
         sendEmailAndCloseConnection();
         System.out.println("Send mail ended");
     }
+    
+    public void sendMailFailedRegistrationInput(String inss, String reason, String workplace) throws MessagingException {
+        System.out.println("Send mail method");
+        setupEmailRecipients();
+        setupEmailProperties();
+        setupEmailSession();
+        setupMessageFailedRegisterationInput(inss, reason, workplace);
+        setupConnection();
+        sendEmailAndCloseConnection();
+        System.out.println("Send mail ended");
+    }
+    
+    public void sendMailFailedRegistrationAfterCheck(String messageText) throws MessagingException {
+        System.out.println("Send mail method");
+        setupEmailRecipients();
+        setupEmailProperties();
+        setupEmailSession();
+        setupMessageFailedRegisterationAfterCheck(messageText);
+        setupConnection();
+        sendEmailAndCloseConnection();
+        System.out.println("Send mail ended");
+    }
 
     private void setupEmailProperties() throws MessagingException{
         props = System.getProperties();
@@ -80,8 +102,24 @@ public class MailSender {
         message = new MimeMessage(session);
         message.setFrom(new InternetAddress(BadgerEmailSettings.EMAIL_from));
         message.addRecipients(Message.RecipientType.TO, recipients);
-        message.setSubject(BadgerEmailSettings.EMAIL_subject);
+        message.setSubject(BadgerEmailSettings.EMAIL_subject_servicedesk);
         message.setText("Service desk is unavailable, please log in the eployees manual");
+    }
+    
+    private void setupMessageFailedRegisterationInput(String inss, String reason, String workplace) throws MessagingException {
+        message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(BadgerEmailSettings.EMAIL_from));
+        message.addRecipients(Message.RecipientType.TO, recipients);
+        message.setSubject(BadgerEmailSettings.EMAIL_subject_failed_registration);
+        message.setText("Employee with inss: " + inss + " failed because of: \n\n" + reason + "\n\n And needs a manual registration at workplace: " + workplace + ".");
+    }
+    
+    private void setupMessageFailedRegisterationAfterCheck(String messageText) throws MessagingException {
+        message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(BadgerEmailSettings.EMAIL_from));
+        message.addRecipients(Message.RecipientType.TO, recipients);
+        message.setSubject(BadgerEmailSettings.EMAIL_subject_failed_registration);
+        message.setText(messageText);
     }
 
     private void setupConnection() throws MessagingException {

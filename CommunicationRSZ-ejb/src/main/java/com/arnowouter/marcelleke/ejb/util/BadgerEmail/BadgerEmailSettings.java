@@ -19,7 +19,8 @@ public class BadgerEmailSettings {
     public static String EMAIL_password = "wachtwoorddatinplaintextmagstaan";
     public static String EMAIL_protocol = "smtps";
     public static int EMAIL_port = 465;//587;
-    public static String EMAIL_subject = "Service is not available. Please contact service desk.";
+    public static String EMAIL_subject_servicedesk = "Service is not available. Please contact service desk.";
+    public static String EMAIL_subject_failed_registration = "Employee failed registration";
     public static String RECIPIENT = "verbeecktom18@gmail.com";
 
     public static void setEMAIL_host(String EMAIL_host) {
@@ -43,6 +44,6 @@ public class BadgerEmailSettings {
     }
 
     public static void setEMAIL_subject(String EMAIL_subject) {
-        BadgerEmailSettings.EMAIL_subject = EMAIL_subject;
+        BadgerEmailSettings.EMAIL_subject_failed_registration = EMAIL_subject;
     }
 }

@@ -26,6 +26,7 @@ import be.socialsecurity.presenceregistration.v1.SearchPresencesRequest;
 import be.socialsecurity.presenceregistration.v1.SystemError;
 import com.tomverbeeck.entities.Rsz;
 import com.tomverbeeck.entities.RszRegistered;
+import com.tomverbeeck.validator.Validator;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -58,11 +59,13 @@ public class RszFacade extends AbstractFacade<Rsz> {
     private GetPresenceRegistrationRequest getPresenceRequest;
     private SearchPresencesRequest searchRequest;
 
+    private Validator validator = new Validator();
+
     @EJB
     RszRegisteredFacade registeredBean;
-    
+
     @EJB
-    private MailSender mailSender;
+    MailSender mailSender;
 
     @Override
     protected EntityManager getEntityManager() {
@@ -88,6 +91,10 @@ public class RszFacade extends AbstractFacade<Rsz> {
         for (Rsz e : employees) {
             PresenceRegistrationSubmitType request = new PresenceRegistrationSubmitType();
 
+            if (checkRegisterRequest(e)) {
+                continue;
+            }
+
             request.setCompanyID(Long.parseLong(filterPointAndStripe(e.getCompanyId())));
             request.setINSS(filterPointAndStripe(e.getInss()));
             request.setWorkPlaceId(filterPointAndStripe(e.getWorkPlaceId()));
@@ -96,7 +103,6 @@ public class RszFacade extends AbstractFacade<Rsz> {
             XMLGregorianCalendar xmlDate = null;
             try {
                 xmlDate = DatatypeFactory.newInstance().newXMLGregorianCalendarDate(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH), DatatypeConstants.FIELD_UNDEFINED);
-                //System.out.println("Date is " + xmlDate.toString());
             } catch (DatatypeConfigurationException ex) {
                 Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -106,20 +112,76 @@ public class RszFacade extends AbstractFacade<Rsz> {
         }
     }
 
-    public RegisterPresencesRequest getRegisterPresenceList() {
-        return registerPresenceList;
+    public void addCancelRequest(String xmlDate, String inss, String workplaceID, String reason) {
+        if (!validator.checkINSS(inss)) {
+            System.out.println("INSS is not allowed max 11 chars and this inss has " + inss.length() + " chars");
+            return;
+        } else if (!validator.checkCheckinAtWorkNumber(workplaceID)) {
+            System.out.println("CheckinAtWork number is not allowed max 13 chars and this inss has " + workplaceID.length() + " chars");
+            return;
+        } else if (!validator.checkCancelReason(reason)) {
+            System.out.println("Reason must be Holiday, Disease, Planning, C32a or Other instead of " + reason);
+            return;
+        }
+
+        String id = getRegistrationID(xmlDate, filterPointAndStripe(inss), filterPointAndStripe(workplaceID));
+
+        if (registerPresenceList == null) {
+            System.out.println("List is null");
+        }
+
+        if (id.isEmpty()) {
+            System.out.println("No reg ID found");
+            return;
+        }
+
+        CancelPresenceRequestType request = new CancelPresenceRequestType();
+        request.setPresenceRegistrationId(Long.parseLong(id));
+        request.setCancellationReason(reason);
+
+        cancelPresenceList.getCancelPresenceRequest().add(request);
     }
 
-    public CancelPresencesRequest getCancelPresenceList() {
-        return cancelPresenceList;
+    public void searchPreferences(String type, String value) {
+        SearchPresencesRequestType request = new SearchPresencesRequestType();
+        SearchPresenceRegistrationCriteria criteria = new SearchPresenceRegistrationCriteria();
+
+        if (type.equals("INSS")) {
+            criteria.setINSS(value);
+        } else if (type.equals("CampanyID")) {
+            criteria.setCompanyID(Long.parseLong(value));
+        } else if (type.equals("Status")) {
+            StatusListType remark = new StatusListType();
+            if (value.equals("SUCCESSFULLY_REGISTERED")) {
+                remark.getStatus().add(StatusType.SUCCESSFULLY_REGISTERED);
+            } else if (value.equals("FAILED")) {
+                remark.getStatus().add(StatusType.FAILED);
+            }
+            criteria.setStatusList(remark);
+        }
+
+        request.setSearchPresenceRegistrationCriteria(criteria);
+        searchRequest.setSearchPresenceRequest(request);
     }
 
-    public GetPresenceRegistrationRequest getGetPresenceRequest() {
-        return getPresenceRequest;
-    }
+    public void getPrecensesRequest(String inss, String workplaceID) {
+        GetPresenceRegistrationRequestType request = new GetPresenceRegistrationRequestType();
 
-    public SearchPresencesRequest getSearchRequest() {
-        return searchRequest;
+        GregorianCalendar cal = new GregorianCalendar();
+        XMLGregorianCalendar xmlDate = null;
+        try {
+            xmlDate = DatatypeFactory.newInstance().newXMLGregorianCalendarDate(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH), DatatypeConstants.FIELD_UNDEFINED);
+            System.out.println(getRegistrationID(xmlDate.toString(), inss, workplaceID));
+        } catch (DatatypeConfigurationException ex) {
+            Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        if (getRegistrationID(xmlDate.toString(), inss, workplaceID).isEmpty()) {
+            System.out.println("No registrations found");
+        } else {
+            request.setPresenceRegistrationId(Long.parseLong(getRegistrationID(xmlDate.toString(), inss, workplaceID)));
+            getPresenceRequest.setGetPresenceRegistrationRequest(request);
+        }
     }
 
     public RegisterPresencesResponse processRegisterPresence(RegisterPresencesResponse responseList) {
@@ -136,6 +198,14 @@ public class RszFacade extends AbstractFacade<Rsz> {
                 ent.setStatus("FAILED");
                 ent.setCreationDate(submitRequest.getRegistrationDate().toString());
                 ent.setCheckinAtWorkNumber(submitRequest.getWorkPlaceId());
+
+                try {
+                    mailSender.sendMailFailedRegistrationAfterCheck("Employee with inss: " + ent.getInss() + " not checked in, status: " + ent.getStatus()
+                            + "\nAnd error message: " + response.getPresenceRegistrationError().getErrorList().getError().get(0).getErrorDescription()
+                            + "\nAnd needs a manual registration at workplace: " + ent.getCheckinAtWorkNumber() + ".");
+                } catch (MessagingException ex) {
+                    Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
+                }
 
                 registeredBean.create(ent);
                 continue;
@@ -202,6 +272,15 @@ public class RszFacade extends AbstractFacade<Rsz> {
                     entity.setPresenceRegistrationId(registeredEnt.getPresenceRegistrationId());
                     entity.setCheckinAtWorkNumber(registeredEnt.getCheckinAtWorkNumber());
                     entity.setStatus(response.getPresenceRegistrationError().getErrorList().getError().get(0).getErrorDescription());
+
+                    try {
+                        mailSender.sendMailFailedRegistrationAfterCheck("Employee with inss: " + entity.getInss() + " not cancelled, status: " + entity.getStatus()
+                                + "\nAnd error message: " + response.getPresenceRegistrationError().getErrorList().getError().get(0).getErrorDescription()
+                                + "\nAnd needs a manual registration at workplace: " + entity.getCheckinAtWorkNumber() + ".");
+                    } catch (MessagingException ex) {
+                        Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+
                     registeredBean.remove(registeredEnt);
                     registeredBean.create(entity);
                 }
@@ -265,7 +344,74 @@ public class RszFacade extends AbstractFacade<Rsz> {
         return response;
     }
 
+    public RegisterPresencesRequest getRegisterPresenceList() {
+        return registerPresenceList;
+    }
+
+    public CancelPresencesRequest getCancelPresenceList() {
+        return cancelPresenceList;
+    }
+
+    public GetPresenceRegistrationRequest getGetPresenceRequest() {
+        return getPresenceRequest;
+    }
+
+    public SearchPresencesRequest getSearchRequest() {
+        return searchRequest;
+    }
+
+    public String filterPointAndStripe(String toFilter) {
+        String returnString = "";
+        if (toFilter.contains("-") || toFilter.contains(".")) {
+            String[] partssInss = toFilter.split("-|\\.");
+            for (String s : partssInss) {
+                returnString += s;
+            }
+        } else {
+            returnString = toFilter;
+        }
+        return returnString;
+    }
+
+    public boolean systemError(SystemError error, String inss, String workplaceid) throws MessagingException {
+        boolean returnBool = true;
+        printLocalisedString(error.getFaultInfo().getMessage());
+
+        if (error.getFaultInfo().getCode().equals("SOA-02001")) {
+            mailSender.sendMailServiceDesk();
+            returnBool = false;
+        } else if (error.getFaultInfo().getCode().equals("SOA-03006")) {
+            String errorMsg = "Employees registration " + inss + " failed with reason: \n\t" + getLocalisedString(error.getFaultInfo().getMessage());
+            errorMsg += "\n" + "Please registrate this employee manually at workplace: " + workplaceid;
+            mailSender.sendMailFailedRegistrationAfterCheck(errorMsg);
+            returnBool = false;
+        }
+
+        return returnBool;
+    }
+
+    public void printLocalisedString(List<LocalisedString> s) {
+        String error = "";
+        for (LocalisedString fault : s) {
+            error += fault.getValue();
+            error += " ";
+        }
+        System.out.println("Error: '" + error + "'");
+    }
+
+    public String getLocalisedString(List<LocalisedString> s) {
+        String error = "";
+        for (LocalisedString fault : s) {
+            error += fault.getValue();
+            error += " ";
+        }
+        return error;
+    }
+
     public String getRegistrationID(String date, String inss, String workplaceID) {
+        if (date == null) {
+            return "";
+        }
         String regID = "";
         List<RszRegistered> employees;
         employees = registeredBean.findAll();
@@ -280,96 +426,37 @@ public class RszFacade extends AbstractFacade<Rsz> {
         return regID;
     }
 
-    public void addCancelRequest(String id, String reason) {
-        if (registerPresenceList == null) {
-            System.out.println("List is null");
+    public boolean checkRegisterRequest(Rsz e) {
+        boolean error = false;
+        String errorMessage = "";
+        if (!validator.checkINSS(e.getInss())) {
+            errorMessage = "\t- INSS is not allowed max 11 chars and this inss has " + e.getInss().length() + " chars";
+            error = true;
         }
-
-        if (id.isEmpty()) {
-            System.out.println("No reg ID found");
-            return;
-        }
-
-        CancelPresenceRequestType request = new CancelPresenceRequestType();
-        request.setPresenceRegistrationId(Long.parseLong(id));
-        request.setCancellationReason(reason);
-
-        cancelPresenceList.getCancelPresenceRequest().add(request);
-    }
-
-    public void getPrecensesRequest(String inss, String workplaceID) {
-        GetPresenceRegistrationRequestType request = new GetPresenceRegistrationRequestType();
-
-        GregorianCalendar cal = new GregorianCalendar();
-        XMLGregorianCalendar xmlDate = null;
-        try {
-            xmlDate = DatatypeFactory.newInstance().newXMLGregorianCalendarDate(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH), DatatypeConstants.FIELD_UNDEFINED);
-        } catch (DatatypeConfigurationException ex) {
-            Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        System.out.println(getRegistrationID(xmlDate.toString(), inss, workplaceID));
-        if (getRegistrationID(xmlDate.toString(), inss, workplaceID).isEmpty()) {
-            System.out.println("No registrations found");
-        } else {
-            request.setPresenceRegistrationId(Long.parseLong(getRegistrationID(xmlDate.toString(), inss, workplaceID)));
-            getPresenceRequest.setGetPresenceRegistrationRequest(request);
-        }
-    }
-
-    public void searchPreferences(String type, String value) {
-        SearchPresencesRequestType request = new SearchPresencesRequestType();
-        SearchPresenceRegistrationCriteria criteria = new SearchPresenceRegistrationCriteria();
-
-        if (type.equals("INSS")) {
-            criteria.setINSS(value);
-        } else if (type.equals("CampanyID")) {
-            criteria.setCompanyID(Long.parseLong(value));
-        } else if (type.equals("Status")) {
-            StatusListType remark = new StatusListType();
-            if (value.equals("SUCCESSFULLY_REGISTERED")) {
-                remark.getStatus().add(StatusType.SUCCESSFULLY_REGISTERED);
-            } else if (value.equals("FAILED")) {
-                remark.getStatus().add(StatusType.FAILED);
+        if (!validator.checkCheckinAtWorkNumber(e.getWorkPlaceId())) {
+            if (errorMessage.isEmpty()) {
+                errorMessage = "\t- CheckinAtWork number is not allowed max 13 chars and this checkinatworkID has " + e.getWorkPlaceId().length() + " chars";
+            } else {
+                errorMessage += "\n\t- CheckinAtWork number is not allowed max 13 chars and this checkinatworkID has " + e.getWorkPlaceId().length() + " chars";
             }
-            criteria.setStatusList(remark);
+            error = true;
         }
-
-        request.setSearchPresenceRegistrationCriteria(criteria);
-        searchRequest.setSearchPresenceRequest(request);
-    }
-
-    private String filterPointAndStripe(String toFilter) {
-        String returnString = "";
-        if (toFilter.contains("-") || toFilter.contains(".")) {
-            String[] partssInss = toFilter.split("-|\\.");
-            for (String s : partssInss) {
-                returnString += s;
+        if (!validator.checkCompanyID(e.getCompanyId())) {
+            if (errorMessage.isEmpty()) {
+                errorMessage = "\t- Company id is not allowed max 13 chars and this comany id has " + e.getCompanyId().length() + " chars";
+            } else {
+                errorMessage += "\n\t- Company id is not allowed max 13 chars and this comany id has " + e.getCompanyId().length() + " chars";
             }
-        } else {
-            returnString = toFilter;
+            error = true;
         }
-        return returnString;
-    }
-    
-    public boolean systemOnline(SystemError error) throws MessagingException{
-        boolean returnBool = true;
-        printLocalisedString(error.getFaultInfo().getMessage());
-        
-        if(error.getFaultInfo().getCode().equals("SOA-02001")){
-            mailSender.sendMailServiceDesk();
-            returnBool = false;
+        errorMessage += "";
+        if (error) {
+            try {
+                mailSender.sendMailFailedRegistrationInput(e.getInss(), errorMessage, e.getWorkPlaceId());
+            } catch (MessagingException ex) {
+                Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
-        
-        return returnBool;
-    }
-    
-    public void printLocalisedString(List<LocalisedString> s) {
-        String error = "";
-        for (LocalisedString fault : s) {
-            error += fault.getValue();
-            error += " ";
-        }
-        System.out.println("Error: '" + error  + "'");
+        return error;
     }
 }
