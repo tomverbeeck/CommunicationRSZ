@@ -58,7 +58,7 @@ public class Validator {
             return false;
     }
 
-    private String filterPointAndStripe(String toFilter) {
+    public String filterPointAndStripe(String toFilter) {
         String returnString = "";
         if (toFilter.contains("-") || toFilter.contains(".")) {
             String[] partssInss = toFilter.split("-|\\.");
@@ -68,6 +68,7 @@ public class Validator {
         } else {
             returnString = toFilter;
         }
-        return returnString;
+
+        return returnString.replaceAll("\\s+", "");
     }
 }

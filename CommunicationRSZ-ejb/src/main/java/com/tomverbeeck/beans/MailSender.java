@@ -103,7 +103,7 @@ public class MailSender {
         message.setFrom(new InternetAddress(BadgerEmailSettings.EMAIL_from));
         message.addRecipients(Message.RecipientType.TO, recipients);
         message.setSubject(BadgerEmailSettings.EMAIL_subject_servicedesk);
-        message.setText("Service desk is unavailable, please log in the eployees manual");
+        message.setText("Service desk is unavailable, please register the eployees manual");
     }
     
     private void setupMessageFailedRegisterationInput(String inss, String reason, String workplace) throws MessagingException {

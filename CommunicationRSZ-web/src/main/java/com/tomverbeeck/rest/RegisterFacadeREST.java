@@ -16,18 +16,23 @@ import be.socialsecurity.presenceregistration.v1.RegisterPresencesRequest;
 import be.socialsecurity.presenceregistration.v1.RegisterPresencesResponse;
 import be.socialsecurity.presenceregistration.v1.SearchPresencesResponse;
 import be.socialsecurity.presenceregistration.v1.SystemError;
+import com.arnowouter.marcelleke.ejb.connectors.odoo.OdooException;
+import com.arnowouter.marcelleke.ejb.exceptions.ErpException;
+import com.arnowouter.marcelleke.ejb.exceptions.MarcellekeSystemException;
 import com.tomverbeeck.beans.RszFacade;
 import com.tomverbeeck.entities.Rsz;
+import com.tomverbeeck.entities.RszRegistered;
+import com.tomverbeeck.timer.RegisterTimerBean;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.mail.MessagingException;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -48,22 +53,18 @@ import org.joda.time.DateTime;
  */
 @Stateless
 @Path("/RegisterPresence")
-public class RegisterFacadeREST extends AbstractFacade<Rsz> {
-
-    @PersistenceContext(unitName = PU)
-    private EntityManager em;
+public class RegisterFacadeREST {
 
     @EJB
     RszFacade rszBean;
+
+    @EJB
+    RegisterTimerBean timeBean;
 
     private DateTime date;
 
     private static PresenceRegistrationService presenceService;
     private static PresenceRegistrationPortType port;
-
-    public RegisterFacadeREST() {
-        super(Rsz.class);
-    }
 
     @GET
     @Produces(MediaType.APPLICATION_XML)
@@ -89,6 +90,22 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
 
     @GET
     @Produces(MediaType.APPLICATION_XML)
+    @Path("preRegister")
+    public String preRegister() {
+        timeBean.myTimerPreRegister();
+        return "Kleir";
+    }
+    
+    @GET
+    @Produces(MediaType.APPLICATION_XML)
+    @Path("afterRegister")
+    public String afterRegister() {
+        timeBean.myTimerAfterRegister();
+        return "Kleir";
+    }
+
+    @POST
+    @Produces(MediaType.APPLICATION_XML)
     @Path("addCancelPresence")
     public CancelPresencesRequest addCancelRequest(@QueryParam("inss") String inss, @QueryParam("reason") String reason, @QueryParam("workplaceid") String workplaceID) {
         GregorianCalendar cal = new GregorianCalendar();
@@ -106,7 +123,7 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
     @GET
     @Produces(MediaType.APPLICATION_XML)
     @Path("initRegister")
-    public RegisterPresencesRequest initRegister() {
+    public RegisterPresencesRequest initRegister() throws OdooException, ErpException, MarcellekeSystemException {
         initProxy();
 
         date = new DateTime();
@@ -120,7 +137,7 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
     public RegisterPresencesResponse registerRequest() throws MessagingException {
         checkTime();
 
-        System.out.println("registerRequest");
+        System.out.println("### Pre registration register schedule ###");
         System.setProperty("com.sun.xml.internal.ws.transport.http.client.HttpTransportPipe.dump", "true");
         if (presenceService == null) {
             System.out.println("Service is zero");
@@ -138,13 +155,15 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
                 response = port.registerPresences(rszBean.getRegisterPresenceList());
             } catch (SystemError ex) {
                 if (!rszBean.systemError(ex, "One of the isnss's: " + rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().get(0).getINSS(), "Not found (register request)")) {
+                    System.out.println("System error in the registration: " + ex.toString());
                     return new RegisterPresencesResponse();
                 }
-                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
             } catch (BusinessError ex) {
-                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
+                System.out.println("Business error in the registration: " + ex.toString());
             }
         }
+
+        System.out.println("### Pre registration registered schedule starting processing ###");
 
         rszBean.processRegisterPresence(response);
         //TODO if successfull send data to odoo that update was succes otherwise send fail to ODOO
@@ -162,11 +181,6 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
         ent.setInss(inss);
         ent.setCompanyId(companyID);
         ent.setWorkPlaceId(workplaceID);
-
-        if (rszBean.checkRegisterRequest(ent)) {
-            return new RegisterPresencesResponse();
-        }
-
         GregorianCalendar cal = new GregorianCalendar();
         XMLGregorianCalendar xmlDate = null;
         try {
@@ -175,11 +189,69 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
             Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+        //Check if data from input is correct otherwise it will 
+        System.out.println("### Check if data from input is correct otherwise it will  ###");
+        List<Rsz> foundInss = rszBean.getEmployeesByInss(ent.getInss());
+        if (rszBean.checkRegisterRequest(ent, false)) {
+            //Normally only one employee will be returned
+            if (foundInss.isEmpty()) {
+                rszBean.create(ent);
+                RszRegistered reg = new RszRegistered();
+                reg.setCheckinAtWorkNumber(ent.getWorkPlaceId());
+                reg.setCreationDate(xmlDate.toString());
+                reg.setInss(ent.getInss());
+                reg.setCompanyID(ent.getCompanyId());
+                reg.setStatus("Failed Manual Checkin Requested");
+
+                rszBean.getRegisteredBean().create(reg);
+            }
+            return new RegisterPresencesResponse();
+        }
+
+        //When the data is ok, the application will see if the employee is already registered
+        System.out.println("### When the data is ok, the application will see if the employee is already registered ###");
+        List<RszRegistered> alreadyReg = rszBean.getRegisteredBean().getByInss(rszBean.getValidator().filterPointAndStripe(ent.getInss()));
+        System.out.println("Size already reg is " + alreadyReg.size());
+        if (!alreadyReg.isEmpty()) {
+            RszRegistered regiEmploye = null;
+            for (RszRegistered reg : alreadyReg) {
+                System.out.println("Reg is: " + reg.toString() + " and date  is " + xmlDate.toString());
+                if (xmlDate.toString().equals(reg.getCreationDate())) {
+                    System.out.println("\t\t\tFOOUUND");
+                    regiEmploye = reg;
+                    break;
+                }
+            }
+            //if the right registration is found it will be returned to the backend
+            System.out.println("### if the right registration is found it will be returned to the backend ###");
+            if (regiEmploye != null) {
+                return new RegisterPresencesResponse();
+            } else {
+                //No registration is found for this employee on this date, registration will be needed
+                System.out.println("### No registration is found for this employee on this date, registration will be needed ###");
+            }
+        }
+
         PresenceRegistrationSubmitType request = new PresenceRegistrationSubmitType();
-        request.setINSS(ent.getInss());
-        request.setCompanyID(Long.parseLong(ent.getCompanyId()));
-        request.setWorkPlaceId(ent.getWorkPlaceId());
+        request.setINSS(rszBean.getValidator().filterPointAndStripe(ent.getInss()));
+        request.setCompanyID(Long.parseLong(rszBean.getValidator().filterPointAndStripe(ent.getCompanyId())));
+        request.setWorkPlaceId(rszBean.getValidator().filterPointAndStripe(ent.getWorkPlaceId()));
         request.setRegistrationDate(xmlDate);
+        //When the employee is not yet checked in, the application will first check the pre registered tabel 
+        System.out.println("### When the employee is not yet checked in, the application will first check the pre registered tabel ###");
+        if (foundInss.isEmpty()) {
+            rszBean.create(ent);
+        } else {
+            //only pre registration of one day in this tabel but multiple construction sites is possible
+            System.out.println("### only pre registration of one day in this tabel but multiple construction sites is possible ###");
+            for (Rsz r : foundInss) {
+                if (r.getWorkPlaceId().isEmpty()) {
+                    int id = r.getId();
+                    ent.setId(id);
+                    rszBean.edit(ent);
+                }
+            }
+        }
 
         rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().add(request);
 
@@ -189,10 +261,6 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
             System.out.println("Service is zero");
         }
 
-        if (rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().isEmpty()) {
-            return new RegisterPresencesResponse();
-        }
-
         RegisterPresencesResponse response = new RegisterPresencesResponse();
         if (port == null) {
             return response;
@@ -200,15 +268,14 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
             try {
                 response = port.registerPresences(rszBean.getRegisterPresenceList());
             } catch (SystemError ex) {
-                if (!rszBean.systemError(ex, inss, workplaceID)) {
+                if (!rszBean.systemError(ex, "INSS: " + rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().get(0).getINSS(), "Not found (register one employee request)")) {
+                    System.out.println("System error in the one employee registration: " + ex.toString());
                     return new RegisterPresencesResponse();
                 }
-                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
             } catch (BusinessError ex) {
-                Logger.getLogger(RegisterFacadeREST.class.getName()).log(Level.SEVERE, null, ex);
+                System.out.println("Business error in the one employee registration: " + ex.toString());
             }
         }
-
         rszBean.processRegisterPresence(response);
         //TODO if successfull send data to odoo that update was succes otherwise send fail to ODOO
         rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().clear();
@@ -346,10 +413,4 @@ public class RegisterFacadeREST extends AbstractFacade<Rsz> {
         client.getInInterceptors().add(new LoggingInInterceptor());
         client.getOutInterceptors().add(new LoggingOutInterceptor());
     }
-
-    @Override
-    protected EntityManager getEntityManager() {
-        return em;
-    }
-
 }

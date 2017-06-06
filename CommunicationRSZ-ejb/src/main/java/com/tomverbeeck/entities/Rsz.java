@@ -33,6 +33,8 @@ import javax.xml.bind.annotation.XmlRootElement;
     , @NamedQuery(name = "Rsz.findByCompanyId", query = "SELECT r FROM Rsz r WHERE r.companyId = :companyId")
     , @NamedQuery(name = "Rsz.findByWorkPlaceId", query = "SELECT r FROM Rsz r WHERE r.workPlaceId = :workPlaceId")})
 public class Rsz implements Serializable {
+    
+    public static final String FIND_BY_INSS = "Rsz.findByInss";
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -42,17 +44,17 @@ public class Rsz implements Serializable {
     private Integer id;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 45)
+    @Size(min = 0, max = 45)
     @Column(name = "INSS")
     private String inss;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 20)
+    @Size(min = 0, max = 20)
     @Column(name = "CompanyId")
     private String companyId;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 20)
+    @Size(min = 0, max = 20)
     @Column(name = "WorkPlaceId")
     private String workPlaceId;
 

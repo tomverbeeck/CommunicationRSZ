@@ -15,7 +15,7 @@ import java.util.List;
 public interface ErpSpecificConnectorInterface {
     public List<String> getAllEmployeeNames() throws ErpException;
     public List<Employee> getAllEmployees() throws ErpException;
-    public Employee getEmployeeByErpId(int employeeId) throws ErpException, MarcellekeSystemException;
+    public String getEmployeeByErpId(int employeeId) throws ErpException, MarcellekeSystemException;
     public Employee getEmployeeByName(String employeeName) throws ErpException, MarcellekeSystemException;
     public List<Location> getAllLocations();
     public List<Location> getAllLocationsForEmployee(Employee employee) throws ErpException;

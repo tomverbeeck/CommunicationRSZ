@@ -6,7 +6,6 @@
 package com.tomverbeeck.timer;
 
 import be.socialsecurity.presenceregistration.schemas.v1.RegisterPresenceRegistrationResponse;
-import be.socialsecurity.presenceregistration.v1.RegisterPresencesRequest;
 import be.socialsecurity.presenceregistration.v1.RegisterPresencesResponse;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -16,6 +15,7 @@ import com.tomverbeeck.beans.RszFacade;
 import com.tomverbeeck.beans.RszRegisteredFacade;
 import com.tomverbeeck.entities.Rsz;
 import com.tomverbeeck.entities.RszRegistered;
+import com.tomverbeeck.validator.Validator;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -26,6 +26,7 @@ import javax.ejb.EJB;
 import javax.ejb.LocalBean;
 import javax.ejb.Schedule;
 import javax.ejb.Stateless;
+import javax.mail.MessagingException;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.DatatypeFactory;
@@ -40,6 +41,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 public class RegisterTimerBean {
 
     boolean preRegister = true;
+    private Validator validator = new Validator();
     
     @EJB
     private MailSender mailSender;
@@ -50,10 +52,16 @@ public class RegisterTimerBean {
     @EJB
     RszFacade rszBean;
 
-    @Schedule(dayOfWeek = "*", month = "*", hour = "*", dayOfMonth = "5", year = "*", minute = "47", second = "00", persistent = false)
+    @Schedule(dayOfWeek = "*", month = "*", hour = "20", dayOfMonth = "*", year = "*", minute = "45", second = "00", persistent = false)
     public void myTimerPreRegister() {
         if (preRegister) {
             try {
+                for(Rsz r : rszBean.findAll()){
+                    rszBean.remove(r);
+                }
+                
+                System.out.println("### Pre registration starting ###");
+                
                 //Add a register request to the list
                 Client clientAddPressence = Client.create();
                 WebResource webResourceAddPresence = clientAddPressence
@@ -67,30 +75,12 @@ public class RegisterTimerBean {
                             + responseAddPressence.getStatus());
                 }
 
-                RegisterPresencesRequest outputAddPressence = responseAddPressence.getEntity(RegisterPresencesRequest.class);
-
-                System.out.println("Output Add Pressence .... \n");
-                if(!outputAddPressence.getPresenceRegistrationRequest().isEmpty())
-                    System.out.println(outputAddPressence.getPresenceRegistrationRequest().get(0).getINSS());
-
-                //Initialize the proxy for the saml token
-                Client clientInitRegister = Client.create();
-                WebResource wrInitRegister = clientInitRegister
-                        .resource("http://localhost:8080/CommunicationRSZ-web/rest/RegisterPresence/initRegister");
-
-                ClientResponse responseInitRegister = wrInitRegister.accept("application/xml")
-                        .get(ClientResponse.class);
-
-                if (responseInitRegister.getStatus() != 200) {
-                    throw new RuntimeException("Failed : HTTP error code : "
-                            + responseInitRegister.getStatus());
+                if(rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().isEmpty()){
+                    System.out.println("There was no one in the schedule");
+                    return;
                 }
 
-                RegisterPresencesRequest outputInitRegister = responseInitRegister.getEntity(RegisterPresencesRequest.class);
-
-                System.out.println("Output Init Register .... \n");
-                if(!outputInitRegister.getPresenceRegistrationRequest().isEmpty())
-                    System.out.println(outputInitRegister.getPresenceRegistrationRequest().get(0).getINSS());
+                System.out.println("### Pre registration start valid registrations ###");
 
                 //register presences
                 Client clientRegister = Client.create();
@@ -104,13 +94,17 @@ public class RegisterTimerBean {
                     throw new RuntimeException("Failed : HTTP error code : "
                             + responseRegister.getStatus());
                 }
+                
+                System.out.println("### Pre registration schedule registered ###");
 
                 RegisterPresencesResponse outputRegister = responseRegister.getEntity(RegisterPresencesResponse.class);
 
-                System.out.println("Output Register .... \n");
+                System.out.println("\tOutput Register .... \n");
                 for (RegisterPresenceRegistrationResponse response : outputRegister.getPresenceRegistrationResponse()) {
-                    System.out.println("Status of " + response.getPresenceRegistration().getINSS() + ": " + response.getPresenceRegistration().getLastValidation().getStatus().toString());
+                    System.out.println("\t\tStatus of " + response.getPresenceRegistration().getINSS() + ": " + response.getPresenceRegistration().getLastValidation().getStatus().toString());
                 }
+
+                System.out.println("### Pre registration ended ###");
 
             } catch (RuntimeException e) {
                 e.printStackTrace();
@@ -120,9 +114,8 @@ public class RegisterTimerBean {
         }
     }
 
-    @Schedule(dayOfWeek = "*", month = "*", hour = "*", dayOfMonth = "5", year = "*", minute = "49", second = "00", persistent = false)
+    @Schedule(dayOfWeek = "*", month = "*", hour = "20", dayOfMonth = "*", year = "*", minute = "50", second = "00", persistent = false)
     public void myTimerAfterRegister() {
-        List<RszRegistered> checkedInEmployees = registeredBean.findAll();
         List<RszRegistered> checkedInToday = new ArrayList<>();
         List<Rsz> preRegisterd = rszBean.findAll();
 
@@ -134,11 +127,7 @@ public class RegisterTimerBean {
             Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        for(RszRegistered reg : checkedInEmployees){
-            if(reg.getCreationDate().equals(xmlDate.toString())){
-                checkedInToday.add(reg);
-            }
-        }
+        checkedInToday = registeredBean.getByCreationDate(xmlDate.toString());
         
         for(RszRegistered reg : checkedInToday){
             if(reg.getStatus().equals("SUCCESSFULLY_REGISTERED")){
@@ -155,14 +144,42 @@ public class RegisterTimerBean {
             for(Rsz reg : preRegisterd){
                 boolean found = false;
                 for(RszRegistered registered : checkedInToday){
-                    if(rszBean.filterPointAndStripe(reg.getInss()).equals(registered.getInss()) && rszBean.filterPointAndStripe(reg.getWorkPlaceId()).equals(registered.getCheckinAtWorkNumber())){
+                    if(reg.getInss().isEmpty() || reg.getWorkPlaceId().isEmpty())
+                        continue;
+                    if(validator.filterPointAndStripe(reg.getInss()).equals(registered.getInss()) 
+                            && validator.filterPointAndStripe(reg.getWorkPlaceId()).equals(registered.getCheckinAtWorkNumber())){
                         found = true;
                     }
                 }
                 if(!found){
                     System.out.println("Employee with inss: " + reg.getInss() + " was not checked in at workplace: " + reg.getWorkPlaceId());
+                    String errorMessage = "";
+                    if(reg.getWorkPlaceId().isEmpty()){
+                        errorMessage = "\tEmployee doesn't have a checkinatwork number";
+                    }else if(reg.getCompanyId().isEmpty()){
+                        errorMessage = "\tEmployee doesn't have a company ID";
+                    }else if(errorMessage.isEmpty()){
+                        errorMessage = "\tUnknown reasons this checkin failed: " + reg.toString();
+                    }
+                    
+                    try {
+                        mailSender.sendMailFailedRegistrationInput(reg.getInss(), errorMessage, reg.getWorkPlaceId());
+                    } catch (MessagingException ex) {
+                        Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    
+                    RszRegistered regE = new RszRegistered();
+                    regE.setInss(validator.filterPointAndStripe(reg.getInss()));
+                    regE.setCheckinAtWorkNumber(validator.filterPointAndStripe(reg.getWorkPlaceId()));
+                    regE.setCreationDate(xmlDate.toString());
+                    regE.setCompanyID(validator.filterPointAndStripe(reg.getCompanyId()));
+                    regE.setPresenceRegistrationId("Not yet Registered");
+                    regE.setStatus("Failed Manual Checkin Requested");
+                    registeredBean.create(regE);
                 }
             }
+        }else{
+            System.out.println("Everyone is checked in");
         }
         
         System.out.println("After Registration Completed");

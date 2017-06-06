@@ -15,11 +15,11 @@ public class Employee implements Serializable {
     private String name;
     private int erpID;
     private int userID;
+    private String identifID;
     private String workEmail;
     private boolean isAManager;
     private String managerId;
     private boolean isAdmin;
-    private String identificationID;
     
     public Employee(
             String name, 
@@ -27,8 +27,7 @@ public class Employee implements Serializable {
             int userIdOdoo,
             String workEmail, 
             boolean isAManager, 
-            String managerId,
-            String identificationID
+            String managerId, String identifID
     ) {
         this.name = name;
         this.erpID = erpID;
@@ -37,27 +36,29 @@ public class Employee implements Serializable {
         this.isAManager = isAManager;
         this.managerId = managerId;
         this.isAdmin = false;
-        this.identificationID = identificationID;
+        this.identifID = identifID;
     }
 
     public String getName() {return name;}
     public int getErpId() {return erpID;}
+    public String getidentifID() {return identifID;}
     public String getWorkEmail() {return workEmail;}
     public boolean isAManager() {return isAManager;}
     public String getManagerId() {return managerId;}
     public int getUserID() {return userID;}
     public boolean isAdmin() {return isAdmin;}
-    public String getIdentificationID() {return identificationID;}
-
+    
+   
+    
     public void setName(String name) {this.name = name;}
     public void setErpId(int erpId) {this.erpID = erpId;}
     public void setUserID(int userID) {this.userID = userID;}
+    public void setidentifID(String identifID) {this.identifID = identifID;}
     public void setWorkEmail(String workEmail) {this.workEmail = workEmail;}
     public void setIsAManager(boolean isAManager) {this.isAManager = isAManager;}
     public void setManagerId(String managerId) {this.managerId = managerId;}
     public void setIsAdmin(boolean isAdmin) {this.isAdmin = isAdmin;}
-    public void setIdentificationID(String identificationID) {this.identificationID = identificationID;}
-    
+
     @Override
     public String toString() {
         return "Employee{" 
@@ -67,8 +68,8 @@ public class Employee implements Serializable {
                 + ", workEmail=" + workEmail 
                 + ", isAManager=" + isAManager 
                 + ", managerId=" + managerId 
-                + ", identificationID=" + identificationID 
                 + ", isAdmin=" + isAdmin 
+                + ", identifID=" + identifID 
         + '}';
     }
     

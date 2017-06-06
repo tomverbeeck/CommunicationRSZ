@@ -33,8 +33,12 @@ import javax.xml.bind.annotation.XmlRootElement;
     , @NamedQuery(name = "RszRegistered.findByCreationDate", query = "SELECT r FROM RszRegistered r WHERE r.creationDate = :creationDate")
     , @NamedQuery(name = "RszRegistered.findByInss", query = "SELECT r FROM RszRegistered r WHERE r.inss = :inss")
     , @NamedQuery(name = "RszRegistered.findByStatus", query = "SELECT r FROM RszRegistered r WHERE r.status = :status")
+    , @NamedQuery(name = "RszRegistered.findByCompany", query = "SELECT r FROM RszRegistered r WHERE r.companyID = :companyID")
     , @NamedQuery(name = "RszRegistered.findByCheckinAtWorkNumber", query = "SELECT r FROM RszRegistered r WHERE r.checkinAtWorkNumber = :checkinAtWorkNumber")})
 public class RszRegistered implements Serializable {
+
+    public static final String FIND_BY_CREATION_DATE = "RszRegistered.findByCreationDate";
+    public static final String FIND_BY_INSS = "RszRegistered.findByInss";
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -44,29 +48,34 @@ public class RszRegistered implements Serializable {
     private Integer id;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 45)
+    @Size(min = 0, max = 45)
     @Column(name = "presenceRegistrationId")
     private String presenceRegistrationId;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 45)
+    @Size(min = 0, max = 45)
     @Column(name = "creationDate")
     private String creationDate;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 45)
+    @Size(min = 0, max = 45)
     @Column(name = "inss")
     private String inss;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 45)
+    @Size(min = 0, max = 45)
     @Column(name = "status")
     private String status;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 45)
+    @Size(min = 0, max = 45)
     @Column(name = "checkinAtWorkNumber")
     private String checkinAtWorkNumber;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 0, max = 45)
+    @Column(name = "companyID")
+    private String companyID;
 
     public RszRegistered() {
     }
@@ -132,6 +141,14 @@ public class RszRegistered implements Serializable {
         this.checkinAtWorkNumber = checkinAtWorkNumber;
     }
 
+    public String getCompanyID() {
+        return companyID;
+    }
+
+    public void setCompanyID(String companyID) {
+        this.companyID = companyID;
+    }
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -154,7 +171,6 @@ public class RszRegistered implements Serializable {
 
     @Override
     public String toString() {
-        return "com.tomverbeeck.entities.RszRegistered[ id=" + id + " ]";
+        return "RszRegistered{" + "companyID=" + companyID + ", id=" + id + ", presenceRegistrationId=" + presenceRegistrationId + ", creationDate=" + creationDate + ", inss=" + inss + ", status=" + status + ", checkinAtWorkNumber=" + checkinAtWorkNumber + '}';
     }
-    
 }

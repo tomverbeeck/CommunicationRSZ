@@ -24,9 +24,13 @@ import be.socialsecurity.presenceregistration.v1.RegisterPresencesRequest;
 import be.socialsecurity.presenceregistration.v1.RegisterPresencesResponse;
 import be.socialsecurity.presenceregistration.v1.SearchPresencesRequest;
 import be.socialsecurity.presenceregistration.v1.SystemError;
+import com.arnowouter.marcelleke.ejb.connectors.odoo.OdooERPConnector;
+import com.arnowouter.marcelleke.ejb.exceptions.ErpException;
+import com.arnowouter.marcelleke.ejb.exceptions.MarcellekeSystemException;
 import com.tomverbeeck.entities.Rsz;
 import com.tomverbeeck.entities.RszRegistered;
 import com.tomverbeeck.validator.Validator;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -38,6 +42,7 @@ import javax.ejb.Stateless;
 import javax.mail.MessagingException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.DatatypeFactory;
@@ -66,38 +71,80 @@ public class RszFacade extends AbstractFacade<Rsz> {
 
     @EJB
     MailSender mailSender;
+    
+    private OdooERPConnector test;
 
     @Override
     protected EntityManager getEntityManager() {
         return em;
     }
 
+    public Validator getValidator() {
+        return validator;
+    }
+
+    public RszRegisteredFacade getRegisteredBean() {
+        return registeredBean;
+    }
+
     public RszFacade() {
         super(Rsz.class);
         System.out.println("Constructor rsz facade");
-        registerPresenceList = new RegisterPresencesRequest();
-        cancelPresenceList = new CancelPresencesRequest();
-        getPresenceRequest = new GetPresenceRegistrationRequest();
-        searchRequest = new SearchPresencesRequest();
+        if (registerPresenceList == null) {
+            registerPresenceList = new RegisterPresencesRequest();
+        }
+        if (cancelPresenceList == null) {
+            cancelPresenceList = new CancelPresencesRequest();
+        }
+        if (getPresenceRequest == null) {
+            getPresenceRequest = new GetPresenceRegistrationRequest();
+        }
+        if (searchRequest == null) {
+            searchRequest = new SearchPresencesRequest();
+        }
+        try {
+            if (test == null) {
+                test = new OdooERPConnector("https", "intern.isoltechnics.com", 443, "DDI2", "admin@isoltechnics.be", "DDIsoltechnics90");
+                System.out.println("Connected to ODOO");
+            }
+        } catch (ErpException ex) {
+            Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public List<Rsz> getEmployeesByInss(String inss) {
+        inss = inss.toLowerCase();
+        TypedQuery<Rsz> query = em.createNamedQuery(Rsz.FIND_BY_INSS, Rsz.class);
+        query.setParameter("inss", inss);
+        return query.getResultList();
     }
 
     public void addRequest() {
         if (registerPresenceList == null) {
             System.out.println("List is null");
         }
-        List<Rsz> employees;
-        employees = findAll();
+        List<Rsz> employees = new ArrayList<>();
+        System.out.println("### Pre registration get schedule ###");
+        try {
+            employees = test.testFilterWorkOrdersOnDate();
+        } catch (ErpException | MarcellekeSystemException ex) {
+            Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        System.out.println("### Pre registration schedule loaded ###");
 
+        System.out.println("### Pre registration check data ###");
         for (Rsz e : employees) {
             PresenceRegistrationSubmitType request = new PresenceRegistrationSubmitType();
 
-            if (checkRegisterRequest(e)) {
+            create(e);
+
+            if (checkRegisterRequest(e, true)) {
                 continue;
             }
 
-            request.setCompanyID(Long.parseLong(filterPointAndStripe(e.getCompanyId())));
-            request.setINSS(filterPointAndStripe(e.getInss()));
-            request.setWorkPlaceId(filterPointAndStripe(e.getWorkPlaceId()));
+            request.setCompanyID(Long.parseLong(validator.filterPointAndStripe(e.getCompanyId())));
+            request.setINSS(validator.filterPointAndStripe(e.getInss()));
+            request.setWorkPlaceId(validator.filterPointAndStripe(e.getWorkPlaceId()));
 
             GregorianCalendar cal = new GregorianCalendar();
             XMLGregorianCalendar xmlDate = null;
@@ -110,6 +157,8 @@ public class RszFacade extends AbstractFacade<Rsz> {
 
             registerPresenceList.getPresenceRegistrationRequest().add(request);
         }
+
+        System.out.println("### Pre registration data checked, Size before " + employees.size() + " and after " + registerPresenceList.getPresenceRegistrationRequest().size() + "###");
     }
 
     public void addCancelRequest(String xmlDate, String inss, String workplaceID, String reason) {
@@ -124,7 +173,7 @@ public class RszFacade extends AbstractFacade<Rsz> {
             return;
         }
 
-        String id = getRegistrationID(xmlDate, filterPointAndStripe(inss), filterPointAndStripe(workplaceID));
+        String id = getRegistrationID(xmlDate, validator.filterPointAndStripe(inss), validator.filterPointAndStripe(workplaceID));
 
         if (registerPresenceList == null) {
             System.out.println("List is null");
@@ -194,8 +243,9 @@ public class RszFacade extends AbstractFacade<Rsz> {
                 PresenceRegistrationSubmitType submitRequest = response.getPresenceRegistrationError().getPresenceRegistrationSubmitted();
                 RszRegistered ent = new RszRegistered();
                 ent.setInss(submitRequest.getINSS());
+                ent.setCompanyID("" + submitRequest.getCompanyID());
                 ent.setPresenceRegistrationId(submitRequest.getClientPresenceRegistrationReference());
-                ent.setStatus("FAILED");
+                ent.setStatus("Failed Manual Checkin Requested");
                 ent.setCreationDate(submitRequest.getRegistrationDate().toString());
                 ent.setCheckinAtWorkNumber(submitRequest.getWorkPlaceId());
 
@@ -223,12 +273,19 @@ public class RszFacade extends AbstractFacade<Rsz> {
                 Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
             }
             entity.setInss(response.getPresenceRegistration().getINSS());
+            entity.setCompanyID("" + response.getPresenceRegistration().getPresenceRegistrationSubmitted().getCompanyID());
             entity.setPresenceRegistrationId("" + response.getPresenceRegistration().getPresenceRegistrationId());
             entity.setCheckinAtWorkNumber(response.getPresenceRegistration().getPresenceRegistrationSubmitted().getWorkPlaceId());
             if (response.getPresenceRegistration().getLastValidation().getStatus() == StatusType.SUCCESSFULLY_REGISTERED) {
                 entity.setStatus(response.getPresenceRegistration().getLastValidation().getStatus().toString());
             } else if (response.getPresenceRegistration().getLastValidation().getStatus() == StatusType.FAILED) {
-                entity.setStatus(response.getPresenceRegistration().getLastValidation().getStatus().toString());
+                entity.setStatus("Failed Manual Checkin Requested");
+                try {
+                    mailSender.sendMailFailedRegistrationAfterCheck("Employee with inss: " + entity.getInss() + " not checked in, status: " + entity.getStatus()
+                            + "\nAnd needs a manual registration at workplace: " + entity.getCheckinAtWorkNumber() + ".");
+                } catch (MessagingException ex) {
+                    Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
             registeredBean.create(entity);
 
@@ -271,6 +328,7 @@ public class RszFacade extends AbstractFacade<Rsz> {
                     entity.setInss(registeredEnt.getInss());
                     entity.setPresenceRegistrationId(registeredEnt.getPresenceRegistrationId());
                     entity.setCheckinAtWorkNumber(registeredEnt.getCheckinAtWorkNumber());
+                    entity.setCompanyID(registeredEnt.getCompanyID());
                     entity.setStatus(response.getPresenceRegistrationError().getErrorList().getError().get(0).getErrorDescription());
 
                     try {
@@ -291,6 +349,7 @@ public class RszFacade extends AbstractFacade<Rsz> {
             entity.setInss(response.getPresenceRegistration().getINSS());
             entity.setPresenceRegistrationId("" + response.getPresenceRegistration().getPresenceRegistrationId());
             entity.setCheckinAtWorkNumber(response.getPresenceRegistration().getPresenceRegistrationSubmitted().getWorkPlaceId());
+            entity.setCompanyID("" + response.getPresenceRegistration().getPresenceRegistrationSubmitted().getCompanyID());
             GregorianCalendar cal = new GregorianCalendar();
             XMLGregorianCalendar xmlDate = null;
             try {
@@ -348,6 +407,10 @@ public class RszFacade extends AbstractFacade<Rsz> {
         return registerPresenceList;
     }
 
+    public void setRegisterPresenceList(RegisterPresencesRequest registerPresenceList) {
+        this.registerPresenceList = registerPresenceList;
+    }
+
     public CancelPresencesRequest getCancelPresenceList() {
         return cancelPresenceList;
     }
@@ -358,19 +421,6 @@ public class RszFacade extends AbstractFacade<Rsz> {
 
     public SearchPresencesRequest getSearchRequest() {
         return searchRequest;
-    }
-
-    public String filterPointAndStripe(String toFilter) {
-        String returnString = "";
-        if (toFilter.contains("-") || toFilter.contains(".")) {
-            String[] partssInss = toFilter.split("-|\\.");
-            for (String s : partssInss) {
-                returnString += s;
-            }
-        } else {
-            returnString = toFilter;
-        }
-        return returnString;
     }
 
     public boolean systemError(SystemError error, String inss, String workplaceid) throws MessagingException {
@@ -426,35 +476,38 @@ public class RszFacade extends AbstractFacade<Rsz> {
         return regID;
     }
 
-    public boolean checkRegisterRequest(Rsz e) {
+    public boolean checkRegisterRequest(Rsz e, boolean preRegister) {
         boolean error = false;
         String errorMessage = "";
-        if (!validator.checkINSS(e.getInss())) {
-            errorMessage = "\t- INSS is not allowed max 11 chars and this inss has " + e.getInss().length() + " chars";
+        if (!validator.checkINSS(e.getInss()) || e.getInss().isEmpty()) {
+            errorMessage = "\t- INSS is not allowed, max 11 chars and > 0 and this inss has " + e.getInss().length() + " chars";
             error = true;
         }
-        if (!validator.checkCheckinAtWorkNumber(e.getWorkPlaceId())) {
+        if (!validator.checkCheckinAtWorkNumber(e.getWorkPlaceId()) || e.getWorkPlaceId().isEmpty()) {
             if (errorMessage.isEmpty()) {
-                errorMessage = "\t- CheckinAtWork number is not allowed max 13 chars and this checkinatworkID has " + e.getWorkPlaceId().length() + " chars";
+                errorMessage = "\t- CheckinAtWork number is not allowed max 13 chars and > 0 and this checkinatworkID has " + e.getWorkPlaceId().length() + " chars";
             } else {
-                errorMessage += "\n\t- CheckinAtWork number is not allowed max 13 chars and this checkinatworkID has " + e.getWorkPlaceId().length() + " chars";
+                errorMessage += "\n\t- CheckinAtWork number is not allowed max 13 chars and > 0 and this checkinatworkID has " + e.getWorkPlaceId().length() + " chars";
             }
             error = true;
         }
-        if (!validator.checkCompanyID(e.getCompanyId())) {
+        if (!validator.checkCompanyID(e.getCompanyId()) || e.getCompanyId().isEmpty()) {
             if (errorMessage.isEmpty()) {
-                errorMessage = "\t- Company id is not allowed max 13 chars and this comany id has " + e.getCompanyId().length() + " chars";
+                errorMessage = "\t- Company id is not allowed max 13 chars and > 0 and this comany id has " + e.getCompanyId().length() + " chars";
             } else {
-                errorMessage += "\n\t- Company id is not allowed max 13 chars and this comany id has " + e.getCompanyId().length() + " chars";
+                errorMessage += "\n\t- Company id is not allowed max 13 chars and > 0 and this comany id has " + e.getCompanyId().length() + " chars";
             }
             error = true;
         }
         errorMessage += "";
         if (error) {
             try {
-                mailSender.sendMailFailedRegistrationInput(e.getInss(), errorMessage, e.getWorkPlaceId());
+                //Pre registration doesn't send an email to ODOO
+                if (!preRegister) {
+                    mailSender.sendMailFailedRegistrationInput(e.getInss(), errorMessage, e.getWorkPlaceId());
+                }
             } catch (MessagingException ex) {
-                Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
+                System.out.println("!!! ERROR check register request: " + ex.toString());
             }
         }
         return error;
