@@ -147,14 +147,17 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
         Object[] query = {
             asList(OdooDefaults.FIELD_DATE, ">", dateString + " 00:00:00")
         };
+        int counter = 0;
         try {
             Object[] result = odooConnector.searchAndRead(OdooDefaults.MODEL_WORK_ORDERS, query, requestedFields);
             System.out.println("ODOO Aantal matches: " + result.length);
             for (Object o : result) {
                 try {
                     Rsz r = parseWork(o);
-                    if(!r.getInss().isEmpty())
+                    if (!r.getInss().isEmpty()) {
                         tasks.add(r);
+                    }
+                    counter ++;
                 } catch (OdooException ex) {
                     Logger.getLogger(OdooERPConnector.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -162,8 +165,39 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
         } catch (OdooConnectorException ex) {
             Logger.getLogger(OdooERPConnector.class.getName()).log(Level.SEVERE, null, ex);
         }
+        System.out.println("Counter is " + counter);
 
         return tasks;
+    }
+    
+     public int getSizeSchedule() throws ErpException, ErpException, MarcellekeSystemException {
+
+        Object[] requestedFields = {
+            OdooDefaults.FIELD_ID,
+            OdooDefaults.FIELD_NAME,
+            OdooDefaults.FIELD_DATE,
+            OdooDefaults.FIELD_TASK_ID,
+            OdooDefaults.FIELD_DONE_BY
+        };
+
+        List<Rsz> tasks = new ArrayList<>();
+
+        System.out.println("Output of date:" + new Date().toString());
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String dateString = sdf.format(new Date());
+        System.out.println(dateString);
+        Object[] query = {
+            asList(OdooDefaults.FIELD_DATE, ">", dateString + " 00:00:00")
+        };
+        int size = 0;
+        try {
+            Object[] result = odooConnector.searchAndRead(OdooDefaults.MODEL_WORK_ORDERS, query, requestedFields);
+            size = result.length;
+        } catch (OdooConnectorException ex) {
+            Logger.getLogger(OdooERPConnector.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return size;
     }
 
     /*@Override
@@ -275,7 +309,7 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
             //System.out.println("Aantal matches: " + result.length);
 
             for (Object employeeObject : result) {
-               //System.out.println("Employee:" + employeeObject.toString());
+                //System.out.println("Employee:" + employeeObject.toString());
                 HashMap<String, Object> employee = castToHashMap(employeeObject);
                 searchedForEmployee = parseEmployee(employee);
                 //System.out.println("Employee Searched:" + searchedForEmployee.toString());
@@ -293,149 +327,6 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
         }
     }
 
-//    private String getWork(Object[] query) throws ErpException {
-//        try {
-//            Work searchedForEmployee = null;
-//            
-//            for(Object employeeObject : odooConnector.searchAndRead(OdooDefaults.MODEL_PROJECTS_TASKS, query, FILTER_TASK_ID)) {
-//                HashMap<String, Object> employee = castToHashMap(employeeObject);
-//                searchedForEmployee = parseWork(employee);
-//            }
-//            
-//            
-//        } catch (OdooConnectorException ex) {
-//            throw new ErpException(ex.getMessage(), ex, OdooDefaults.ERP_SYSTEM_NAME);
-//        }
-//    }
-//
-//    
-//    @Override
-//    public Location getLocation(String locationId) {
-//        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-//    }
-//    
-//    @Override
-//    public List<Location> getAllLocations() {
-//        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-//    }
-//    
-//    @Override
-//    public List<Location> getAllLocationsForEmployee(Employee employee) throws ErpException {
-//        ArrayList<Location> locations;
-//        if(employee.isAManager()) {
-//            locations = getManagerLocations(employee);
-//        } else {
-//            locations = getEmployeeLocations(employee);
-//        }
-//        ArrayList<Location> homeAndWorkAddress = getHomeAndWorkAddress(employee.getErpId());
-//        locations.addAll(homeAndWorkAddress);
-//        return locations;
-//    } 
-//    
-//    private ArrayList<Location> getManagerLocations(Employee manager) throws ErpException {
-//        ArrayList<Location> locations = new ArrayList<>();
-//        
-//        SalesTeam theSalesTeam = findMatchingSalesTeam(manager.getUserID());
-//        if(theSalesTeam!=null){
-//            
-//            Object[] query = {
-//                asList(OdooDefaults.FIELD_SALES_TEAM, "=", theSalesTeam.getID())
-//            };
-//            
-//            ArrayList<SaleOrder> saleOrdersForSalesTeam = getSaleOrders(query);
-//            
-//            int[] shippingIDs = new int[saleOrdersForSalesTeam.size()];
-//            int i=0;
-//            for(SaleOrder saleOrder: saleOrdersForSalesTeam){
-//                shippingIDs[i] = saleOrder.getShippingID();
-//                i++;
-//            }
-//            locations = getLocationsForSalesOrder(shippingIDs, saleOrdersForSalesTeam);
-//        }
-//        
-//        return locations;
-//    }
-//    
-//    private ArrayList<Location> getEmployeeLocations(Employee employee) throws ErpException {
-//        ArrayList<Task> tasks = getTasksForEmployee(employee.getUserID());
-//        int[] saleOrdersIDs = new int[tasks.size()];
-//        int i=0;
-//        for(Task task : tasks) {
-//            saleOrdersIDs[i] = task.getSaleOrderID();
-//            i++;
-//        }
-//        
-//        ArrayList<SaleOrder> saleOrders = getSaleOrders(saleOrdersIDs);
-//        
-//        int[] shippingIDs = new int[saleOrders.size()];
-//        i=0;
-//        for(SaleOrder saleOrder: saleOrders){
-//            shippingIDs[i] = saleOrder.getShippingID();
-//            i++;
-//        }
-//        
-//        return getLocationsForSalesOrder(shippingIDs, saleOrders);
-//    }
-//    
-//    private ArrayList<Location> getLocationsForSalesOrder(int[] shippingIDs, ArrayList<SaleOrder> saleOrders) throws ErpException {
-//        try {
-//            ArrayList<Location> locations = new ArrayList<>();
-//            Object[] results = odooConnector.read(OdooDefaults.MODEL_RELATIONS, shippingIDs, Location.FIELDS);
-//            for(Object result : results ){
-//                Location location = parseLocation(result);
-//                saleOrders.stream().filter((saleOrder) -> (saleOrder.getShippingID() == location.getID())).forEachOrdered((saleOrder) -> {
-//                    location.setName(saleOrder.getName());
-//                });
-//                locations.add(location);
-//            }
-//            return locations;
-//        } catch (OdooConnectorException ex) {
-//            throw new ErpException(ex.getMessage(), ex, OdooDefaults.ERP_SYSTEM_NAME);
-//        }
-//    }
-//    
-//    private SalesTeam findMatchingSalesTeam(int userID) throws ErpException {
-//        ArrayList<SalesTeam> salesTeams = getAllSalesTeams();
-//        SalesTeam theSalesTeam = null;
-//        for(SalesTeam team : salesTeams){
-//            if(team.getTeamLeaderID()==userID){
-//                theSalesTeam = team;
-//                break;
-//            }
-//        }
-//        return theSalesTeam;
-//    }
-//    
-//    public ArrayList<SalesTeam> getAllSalesTeams() throws ErpException {
-//        try {
-//            Object[] requestedFields = {
-//                OdooDefaults.FIELD_ID,
-//                OdooDefaults.FIELD_NAME,
-//                OdooDefaults.FIELD_TEAM_LEADER
-//            };
-//            
-//            Object[] results = odooConnector.searchAndRead(OdooDefaults.MODEL_SALES_TEAM, requestedFields);
-//            ArrayList<SalesTeam> allSalesTeams = new ArrayList<>();
-//            for(Object result : results){
-//                HashMap<String,Object> resultHM = (HashMap<String, Object>) result;
-//                Object name = resultHM.get(OdooDefaults.FIELD_NAME);
-//                if(!(name instanceof Boolean)) {
-//                    SalesTeam salesTeam = new SalesTeam(name.toString());
-//                    salesTeam.setID((int)resultHM.get(OdooDefaults.FIELD_ID));
-//                    if(!(resultHM.get(OdooDefaults.FIELD_TEAM_LEADER) instanceof Boolean)){
-//                        Object[] teamLeader =  (Object[]) resultHM.get(OdooDefaults.FIELD_TEAM_LEADER);
-//                        salesTeam.setTeamLeaderID((int)teamLeader[0]);
-//                        salesTeam.setTeamLeaderName(teamLeader[1].toString());
-//                    }
-//                    allSalesTeams.add(salesTeam);
-//                }
-//            }
-//            return allSalesTeams;
-//        } catch (OdooConnectorException ex) {
-//            throw new ErpException(ex.getMessage(), ex, OdooDefaults.ERP_SYSTEM_NAME);
-//        }
-//    }
-//     
     private ArrayList<SaleOrder> getSaleOrders(int[] requestedIDs) throws ErpException {
         try {
             Object[] saleOrderObjects = odooConnector.read(OdooDefaults.MODEL_SALE_ORDERS, requestedIDs, SaleOrder.FIELDS);
@@ -562,57 +453,6 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
         return inList;
     }
 
-//    private ArrayList<Location> getHomeAndWorkAddress(int employeeId) throws ErpException {
-//        try {
-//            ArrayList<Location> homeAndWorkAddressesArrayList = new ArrayList<>();
-//            
-//            Object[] modelEmployeesRequestedFields = {
-//                OdooDefaults.FIELD_HOME_ADDRESS_ID,
-//                OdooDefaults.FIELD_WORK_ADDRESS_ID
-//            };
-//            
-//            int[] requestedIDs = new int[1];
-//            requestedIDs[0] = employeeId;
-//            
-//            Object[] result = odooConnector.read(OdooDefaults.MODEL_EMPLOYEES,requestedIDs,modelEmployeesRequestedFields);
-//            for(Object personalAddresses : result) {
-//                HashMap<String,Object> homeAndWorkaddressesMap= castToHashMap(personalAddresses);
-//                if(!(homeAndWorkaddressesMap.get(OdooDefaults.FIELD_HOME_ADDRESS_ID) instanceof Boolean)){
-//                    Object[] homeAddressObject = (Object[]) homeAndWorkaddressesMap.get(OdooDefaults.FIELD_HOME_ADDRESS_ID);
-//                    Location homeAddress = getAddress((int)homeAddressObject[0]);
-//                    homeAddress.setName(OdooDefaults.HOME_ADDRESS);
-//                    homeAndWorkAddressesArrayList.add(homeAddress);
-//                }
-//                
-//                if(!(homeAndWorkaddressesMap.get(OdooDefaults.FIELD_WORK_ADDRESS_ID) instanceof Boolean)){
-//                    Object[] workAddressObject = (Object[]) homeAndWorkaddressesMap.get(OdooDefaults.FIELD_WORK_ADDRESS_ID);
-//                    Location workAddress = getAddress((int)workAddressObject[0]);
-//                    workAddress.setName(OdooDefaults.WORK_ADDRESS);
-//                    homeAndWorkAddressesArrayList.add(workAddress);
-//                }
-//            }
-//            return homeAndWorkAddressesArrayList;
-//        } catch (OdooConnectorException ex) {
-//            throw new ErpException(ex.getMessage(), ex, OdooDefaults.ERP_SYSTEM_NAME);
-//        }
-//    }
-//    
-//    private Location getAddress(int id) throws ErpException { 
-//        try {
-//            Location newLocation = new Location();  
-//            int[] requestedIDs = new int[1];
-//            requestedIDs[0] = id;
-//            
-//            Object[] result = odooConnector.read(OdooDefaults.MODEL_RELATIONS,requestedIDs,Location.FIELDS);
-//            for(Object addressObject : result) {
-//                newLocation = parseLocation(addressObject);
-//            }
-//            return newLocation;
-//        } catch (OdooConnectorException ex) {
-//            throw new ErpException(ex.getMessage(), ex, OdooDefaults.ERP_SYSTEM_NAME);
-//        }
-//    }
-//    
     private SaleOrder parseSaleOrder(Object saleOrderObject) {
         HashMap<String, Object> locationHM = (HashMap<String, Object>) saleOrderObject;
         SaleOrder saleOrder = new SaleOrder();
@@ -668,29 +508,29 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
     }
 
     private Employee parseEmployee(Object employeeObject) throws ErpException {
-        HashMap<String,Object> employeeMap = castToHashMap(employeeObject);
+        HashMap<String, Object> employeeMap = castToHashMap(employeeObject);
         //TODO: If other data need to be retrieved for employees, add it here.
-        int ID = (int)employeeMap.get(OdooDefaults.FIELD_ID);
+        int ID = (int) employeeMap.get(OdooDefaults.FIELD_ID);
         String name = (String) employeeMap.get(OdooDefaults.FIELD_NAME);
 
         //TODO: if this is not activated, throws nullpointer.
         boolean isAManager = (boolean) employeeMap.get(OdooDefaults.FIELD_IS_A_MANAGER);
 
-        String workEmail="none";
-        if(!(employeeMap.get(OdooDefaults.FIELD_WORK_EMAIL) instanceof Boolean)){
+        String workEmail = "none";
+        if (!(employeeMap.get(OdooDefaults.FIELD_WORK_EMAIL) instanceof Boolean)) {
             workEmail = (String) employeeMap.get(OdooDefaults.FIELD_WORK_EMAIL);
         }
 
         String managerID = "none";
-        if(!(employeeMap.get(OdooDefaults.FIELD_MANAGER_ID) instanceof Boolean)){
+        if (!(employeeMap.get(OdooDefaults.FIELD_MANAGER_ID) instanceof Boolean)) {
             Object[] managers = (Object[]) employeeMap.get(OdooDefaults.FIELD_MANAGER_ID);
-            for(Object manager : managers) {
-                managerID += manager +",";
+            for (Object manager : managers) {
+                managerID += manager + ",";
             }
         }
-        
+
         String identificationID = "";
-        if(!(employeeMap.get(OdooDefaults.FIELD_IDENTIF_ID) instanceof Boolean)){
+        if (!(employeeMap.get(OdooDefaults.FIELD_IDENTIF_ID) instanceof Boolean)) {
             identificationID = (String) employeeMap.get(OdooDefaults.FIELD_IDENTIF_ID);
         }
 
@@ -724,63 +564,42 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
 
         Rsz newWork = new Rsz();
 
-        Object[] task = (Object[]) workMap.get(OdooDefaults.FIELD_TASK_ID);
-        int id = (int) task[0];
-        if (getCheckInAtWorkByTask_ID(id) == null) {
-            newWork.setWorkPlaceId("");
-        } else if (getCheckInAtWorkByTask_ID(id).isEmpty()) {
-            newWork.setWorkPlaceId("");
-        } else if(getCheckInAtWorkByTask_ID(id).equals("nee-_______-__-_")){
-            newWork.setWorkPlaceId("");
-        } else if(getCheckInAtWorkByTask_ID(id).equals("NEE-_______-__-_")){
-            newWork.setWorkPlaceId("");
-        }else {
-            newWork.setWorkPlaceId(getCheckInAtWorkByTask_ID(id));
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String dateString = sdf.format(new Date());
+        //dateString = "2017-06-01";
+        Object date = (Object) workMap.get(OdooDefaults.FIELD_DATE);
+        String dateTask = date.toString();
+        String[] arrayOfString = dateTask.split("\\s+");
+        String shortDateTask = arrayOfString[0];
+
+        if (dateString.equals(shortDateTask)) {
+            Object[] task = (Object[]) workMap.get(OdooDefaults.FIELD_TASK_ID);
+            int id = (int) task[0];
+            if (getCheckInAtWorkByTask_ID(id) == null) {
+                newWork.setWorkPlaceId("");
+            } else if (getCheckInAtWorkByTask_ID(id).isEmpty()) {
+                newWork.setWorkPlaceId("");
+            } else if (getCheckInAtWorkByTask_ID(id).equals("nee-_______-__-_")) {
+                newWork.setWorkPlaceId("");
+            } else if (getCheckInAtWorkByTask_ID(id).equals("NEE-_______-__-_")) {
+                newWork.setWorkPlaceId("");
+            } else {
+                newWork.setWorkPlaceId(getCheckInAtWorkByTask_ID(id));
+            }
+
+            Object[] employee = (Object[]) workMap.get(OdooDefaults.FIELD_USER_ID);
+            int idEmployee = (int) employee[0];
+            String e = getEmployeeByErpId(idEmployee);
+            newWork.setInss(e);
+
+            newWork.setCompanyId("873909226");
+        }else{
+            newWork.setInss("");
         }
-
-        Object[] employee = (Object[]) workMap.get(OdooDefaults.FIELD_USER_ID);
-        int idEmployee = (int) employee[0];
-        String e = getEmployeeByErpId(idEmployee);
-        newWork.setInss(e);
-
-        newWork.setCompanyId("873909226");
 
         return newWork;
     }
 
-//    private Location parseLocation(Object locationObject) throws ErpException {
-//        HashMap<String, Object> locationMap = castToHashMap(locationObject);
-//        String street = new String();
-//        String city = new String();
-//        String zip = new String();
-//        String country = new String();
-//        
-//        double latitude = 1.1;
-//        double longitude = 1.1;
-//        
-//        int ID = (int) locationMap.get(OdooDefaults.FIELD_ID);
-//        if(!(locationMap.get(OdooDefaults.FIELD_STREET)instanceof Boolean)){
-//            street = (String)locationMap.get(OdooDefaults.FIELD_STREET);
-//        }
-//        if(!(locationMap.get(OdooDefaults.FIELD_CITY)instanceof Boolean)){
-//            city =(String) locationMap.get(OdooDefaults.FIELD_CITY);
-//        }
-//        if(!(locationMap.get(OdooDefaults.FIELD_ZIP)instanceof Boolean)){
-//            zip =(String) locationMap.get(OdooDefaults.FIELD_ZIP);
-//        }
-//        if(!(locationMap.get(OdooDefaults.FIELD_COUNTRY)instanceof Boolean)){
-//            Object[] c = (Object[])locationMap.get(OdooDefaults.FIELD_COUNTRY);
-//            country = c[1].toString();
-//        }
-//        if(!(locationMap.get(OdooDefaults.FIELD_LATITUDE)instanceof Boolean)){
-//            latitude = (double) locationMap.get(OdooDefaults.FIELD_LATITUDE);
-//            longitude = (double) locationMap.get(OdooDefaults.FIELD_LONGITUDE);
-//        }
-//
-//        AddressEntity address = new AddressEntity(country,city,zip,street);
-//        Location location = new Location("",ID,address,latitude,longitude,true);
-//        return location;
-//    }
     private HashMap<String, Object> castToHashMap(Object toBeCasted) throws OdooException {
         HashMap<String, Object> casted = new HashMap<>();
         try {

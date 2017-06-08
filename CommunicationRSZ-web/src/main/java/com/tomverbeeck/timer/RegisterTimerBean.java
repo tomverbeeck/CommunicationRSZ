@@ -75,7 +75,7 @@ public class RegisterTimerBean {
                             + responseAddPressence.getStatus());
                 }
 
-                if(rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().isEmpty()){
+                if(rszBean.getRegisterPresenceList().get(0).getPresenceRegistrationRequest().isEmpty()){
                     System.out.println("There was no one in the schedule");
                     return;
                 }

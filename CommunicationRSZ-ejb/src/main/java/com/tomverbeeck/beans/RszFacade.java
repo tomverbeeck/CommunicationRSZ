@@ -59,7 +59,7 @@ public class RszFacade extends AbstractFacade<Rsz> {
     @PersistenceContext(unitName = PU)
     private EntityManager em;
 
-    private RegisterPresencesRequest registerPresenceList;
+    private List<RegisterPresencesRequest> registerPresenceList;
     private CancelPresencesRequest cancelPresenceList;
     private GetPresenceRegistrationRequest getPresenceRequest;
     private SearchPresencesRequest searchRequest;
@@ -91,7 +91,8 @@ public class RszFacade extends AbstractFacade<Rsz> {
         super(Rsz.class);
         System.out.println("Constructor rsz facade");
         if (registerPresenceList == null) {
-            registerPresenceList = new RegisterPresencesRequest();
+            registerPresenceList = new ArrayList<>();
+            registerPresenceList.add(new RegisterPresencesRequest());
         }
         if (cancelPresenceList == null) {
             cancelPresenceList = new CancelPresencesRequest();
@@ -118,11 +119,8 @@ public class RszFacade extends AbstractFacade<Rsz> {
         query.setParameter("inss", inss);
         return query.getResultList();
     }
-
-    public void addRequest() {
-        if (registerPresenceList == null) {
-            System.out.println("List is null");
-        }
+    
+    public List<Rsz> getScheduleODOO(){
         List<Rsz> employees = new ArrayList<>();
         System.out.println("### Pre registration get schedule ###");
         try {
@@ -130,10 +128,22 @@ public class RszFacade extends AbstractFacade<Rsz> {
         } catch (ErpException | MarcellekeSystemException ex) {
             Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return employees;
+    }
+
+    public void addRequest() {
+        if (registerPresenceList == null) {
+            System.out.println("List is null");
+        }
+        
+        List<Rsz> employees =  getScheduleODOO();
         System.out.println("### Pre registration schedule loaded ###");
 
         System.out.println("### Pre registration check data ###");
+        int amount = 0;
+        int currentList = 0;
         for (Rsz e : employees) {
+            amount++;
             PresenceRegistrationSubmitType request = new PresenceRegistrationSubmitType();
 
             create(e);
@@ -155,10 +165,12 @@ public class RszFacade extends AbstractFacade<Rsz> {
             }
             request.setRegistrationDate(xmlDate);
 
-            registerPresenceList.getPresenceRegistrationRequest().add(request);
+            if(amount%200 == 0){
+                registerPresenceList.add(new RegisterPresencesRequest());
+                currentList ++;
+            }
+            registerPresenceList.get(currentList).getPresenceRegistrationRequest().add(request);
         }
-
-        System.out.println("### Pre registration data checked, Size before " + employees.size() + " and after " + registerPresenceList.getPresenceRegistrationRequest().size() + "###");
     }
 
     public void addCancelRequest(String xmlDate, String inss, String workplaceID, String reason) {
@@ -245,6 +257,8 @@ public class RszFacade extends AbstractFacade<Rsz> {
                 ent.setInss(submitRequest.getINSS());
                 ent.setCompanyID("" + submitRequest.getCompanyID());
                 ent.setPresenceRegistrationId(submitRequest.getClientPresenceRegistrationReference());
+                if(ent.getPresenceRegistrationId() == null)
+                    ent.setPresenceRegistrationId("Not yet registered");
                 ent.setStatus("Failed Manual Checkin Requested");
                 ent.setCreationDate(submitRequest.getRegistrationDate().toString());
                 ent.setCheckinAtWorkNumber(submitRequest.getWorkPlaceId());
@@ -257,6 +271,7 @@ public class RszFacade extends AbstractFacade<Rsz> {
                     Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
+                System.out.println("Ent is " + ent.toString());
                 registeredBean.create(ent);
                 continue;
             } else if (response.getPresenceRegistration() == null) {
@@ -272,7 +287,10 @@ public class RszFacade extends AbstractFacade<Rsz> {
             } catch (DatatypeConfigurationException ex) {
                 Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
             }
-            entity.setInss(response.getPresenceRegistration().getINSS());
+            if(response.getPresenceRegistration().getINSS() != null)
+                entity.setInss(response.getPresenceRegistration().getINSS());
+            else
+                entity.setInss("error");
             entity.setCompanyID("" + response.getPresenceRegistration().getPresenceRegistrationSubmitted().getCompanyID());
             entity.setPresenceRegistrationId("" + response.getPresenceRegistration().getPresenceRegistrationId());
             entity.setCheckinAtWorkNumber(response.getPresenceRegistration().getPresenceRegistrationSubmitted().getWorkPlaceId());
@@ -287,6 +305,7 @@ public class RszFacade extends AbstractFacade<Rsz> {
                     Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+            System.out.println("Entitty is " + entity.toString());
             registeredBean.create(entity);
 
         }
@@ -346,7 +365,10 @@ public class RszFacade extends AbstractFacade<Rsz> {
             }
 
             RszRegistered entity = new RszRegistered();
-            entity.setInss(response.getPresenceRegistration().getINSS());
+            if(response.getPresenceRegistration().getINSS() != null)
+                entity.setInss(response.getPresenceRegistration().getINSS());
+            else
+                entity.setInss("error");
             entity.setPresenceRegistrationId("" + response.getPresenceRegistration().getPresenceRegistrationId());
             entity.setCheckinAtWorkNumber(response.getPresenceRegistration().getPresenceRegistrationSubmitted().getWorkPlaceId());
             entity.setCompanyID("" + response.getPresenceRegistration().getPresenceRegistrationSubmitted().getCompanyID());
@@ -403,11 +425,11 @@ public class RszFacade extends AbstractFacade<Rsz> {
         return response;
     }
 
-    public RegisterPresencesRequest getRegisterPresenceList() {
+    public List<RegisterPresencesRequest> getRegisterPresenceList() {
         return registerPresenceList;
     }
 
-    public void setRegisterPresenceList(RegisterPresencesRequest registerPresenceList) {
+    public void setRegisterPresenceList(List<RegisterPresencesRequest> registerPresenceList) {
         this.registerPresenceList = registerPresenceList;
     }
 
@@ -421,6 +443,10 @@ public class RszFacade extends AbstractFacade<Rsz> {
 
     public SearchPresencesRequest getSearchRequest() {
         return searchRequest;
+    }
+
+    public OdooERPConnector getTest() {
+        return test;
     }
 
     public boolean systemError(SystemError error, String inss, String workplaceid) throws MessagingException {

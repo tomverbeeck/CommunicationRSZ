@@ -70,7 +70,7 @@ public class RegisterFacadeREST {
     @Produces(MediaType.APPLICATION_XML)
     @Path("registerPresenceList")
     public RegisterPresencesRequest getListPreRegistered() {
-        return rszBean.getRegisterPresenceList();
+        return rszBean.getRegisterPresenceList().get(0);
     }
 
     @GET
@@ -85,7 +85,7 @@ public class RegisterFacadeREST {
     @Path("addRegisterPresence")
     public RegisterPresencesRequest addRegisterRequest() {
         rszBean.addRequest();
-        return rszBean.getRegisterPresenceList();
+        return rszBean.getRegisterPresenceList().get(0);
     }
 
     @GET
@@ -95,7 +95,7 @@ public class RegisterFacadeREST {
         timeBean.myTimerPreRegister();
         return "Kleir";
     }
-    
+
     @GET
     @Produces(MediaType.APPLICATION_XML)
     @Path("afterRegister")
@@ -128,7 +128,7 @@ public class RegisterFacadeREST {
 
         date = new DateTime();
 
-        return rszBean.getRegisterPresenceList();
+        return rszBean.getRegisterPresenceList().get(0);
     }
 
     @GET
@@ -143,7 +143,7 @@ public class RegisterFacadeREST {
             System.out.println("Service is zero");
         }
 
-        if (rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().isEmpty()) {
+        if (rszBean.getRegisterPresenceList().get(0).getPresenceRegistrationRequest().isEmpty()) {
             return new RegisterPresencesResponse();
         }
 
@@ -151,10 +151,14 @@ public class RegisterFacadeREST {
         if (port == null) {
             return response;
         } else {
+            int dummy = 0;
             try {
-                response = port.registerPresences(rszBean.getRegisterPresenceList());
+                for (int i = 0; i < rszBean.getRegisterPresenceList().size(); i++) {
+                    response = port.registerPresences(rszBean.getRegisterPresenceList().get(i));
+                    dummy++;
+                }
             } catch (SystemError ex) {
-                if (!rszBean.systemError(ex, "One of the isnss's: " + rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().get(0).getINSS(), "Not found (register request)")) {
+                if (!rszBean.systemError(ex, "One of the isnss's: " + rszBean.getRegisterPresenceList().get(dummy).getPresenceRegistrationRequest().get(0).getINSS(), "Not found (register request)")) {
                     System.out.println("System error in the registration: " + ex.toString());
                     return new RegisterPresencesResponse();
                 }
@@ -167,7 +171,12 @@ public class RegisterFacadeREST {
 
         rszBean.processRegisterPresence(response);
         //TODO if successfull send data to odoo that update was succes otherwise send fail to ODOO
-        rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().clear();
+        for (int i = 0; i < rszBean.getRegisterPresenceList().size(); i++) {
+            rszBean.getRegisterPresenceList().get(i).getPresenceRegistrationRequest().clear();
+            if(i > 1){
+                rszBean.getRegisterPresenceList().remove(i);
+            }
+        }
         return response;
     }
 
@@ -199,6 +208,7 @@ public class RegisterFacadeREST {
                 RszRegistered reg = new RszRegistered();
                 reg.setCheckinAtWorkNumber(ent.getWorkPlaceId());
                 reg.setCreationDate(xmlDate.toString());
+                reg.setPresenceRegistrationId("Not yet registered");
                 reg.setInss(ent.getInss());
                 reg.setCompanyID(ent.getCompanyId());
                 reg.setStatus("Failed Manual Checkin Requested");
@@ -225,7 +235,12 @@ public class RegisterFacadeREST {
             //if the right registration is found it will be returned to the backend
             System.out.println("### if the right registration is found it will be returned to the backend ###");
             if (regiEmploye != null) {
-                return new RegisterPresencesResponse();
+                if (!regiEmploye.getStatus().equals("SUCCESSFULLY_REGISTERED")) {
+                    regiEmploye.setStatus("");
+                    rszBean.getRegisteredBean().edit(regiEmploye);
+                } else {
+                    return new RegisterPresencesResponse();
+                }
             } else {
                 //No registration is found for this employee on this date, registration will be needed
                 System.out.println("### No registration is found for this employee on this date, registration will be needed ###");
@@ -253,7 +268,7 @@ public class RegisterFacadeREST {
             }
         }
 
-        rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().add(request);
+        rszBean.getRegisterPresenceList().get(0).getPresenceRegistrationRequest().add(request);
 
         System.out.println("registerRequest");
         System.setProperty("com.sun.xml.internal.ws.transport.http.client.HttpTransportPipe.dump", "true");
@@ -266,9 +281,9 @@ public class RegisterFacadeREST {
             return response;
         } else {
             try {
-                response = port.registerPresences(rszBean.getRegisterPresenceList());
+                response = port.registerPresences(rszBean.getRegisterPresenceList().get(0));
             } catch (SystemError ex) {
-                if (!rszBean.systemError(ex, "INSS: " + rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().get(0).getINSS(), "Not found (register one employee request)")) {
+                if (!rszBean.systemError(ex, "INSS: " + rszBean.getRegisterPresenceList().get(0).getPresenceRegistrationRequest().get(0).getINSS(), "Not found (register one employee request)")) {
                     System.out.println("System error in the one employee registration: " + ex.toString());
                     return new RegisterPresencesResponse();
                 }
@@ -278,7 +293,7 @@ public class RegisterFacadeREST {
         }
         rszBean.processRegisterPresence(response);
         //TODO if successfull send data to odoo that update was succes otherwise send fail to ODOO
-        rszBean.getRegisterPresenceList().getPresenceRegistrationRequest().clear();
+        rszBean.getRegisterPresenceList().get(0).getPresenceRegistrationRequest().clear();
         return response;
     }
 
