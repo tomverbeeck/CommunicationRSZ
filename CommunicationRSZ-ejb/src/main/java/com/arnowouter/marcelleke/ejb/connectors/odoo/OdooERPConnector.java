@@ -17,6 +17,7 @@ import com.arnowouter.marcelleke.ejb.connectors.erpClasses.Task;
 import com.arnowouter.marcelleke.ejb.exceptions.ErpException;
 import com.arnowouter.marcelleke.ejb.exceptions.MarcellekeSystemException;
 import com.tomverbeeck.entities.Rsz;
+import com.tomverbeeck.entities.RszRegistered;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import static java.util.Arrays.asList;
@@ -80,6 +81,20 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
         //TODO: watch out! This boolean tells the library to use an UNSECURE client! (Ingores Invalid SSL)
         initializeOdooConnector(true);
         authenticate();
+    }
+
+    public void writeToOdoo(RszRegistered reg) throws OdooConnectorException {
+        String model = OdooDefaults.MODEL_CHECKINATWORK;
+        HashMap<String, String> dataToWrite = new HashMap() {
+            {
+                put("CheckinatworkID", reg.getCheckinAtWorkNumber());
+                put("Rijksregisternummer", reg.getInss());
+                put("Datum", reg.getCreationDate());
+                put("PresenceRegistrationID", reg.getPresenceRegistrationId());
+                put("Status", reg.getStatus());
+            }
+        };
+        odooConnector.createRecord(model, dataToWrite);
     }
 
     @Override
@@ -157,7 +172,7 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
                     if (!r.getInss().isEmpty()) {
                         tasks.add(r);
                     }
-                    counter ++;
+                    counter++;
                 } catch (OdooException ex) {
                     Logger.getLogger(OdooERPConnector.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -169,8 +184,8 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
 
         return tasks;
     }
-    
-     public int getSizeSchedule() throws ErpException, ErpException, MarcellekeSystemException {
+
+    public int getSizeSchedule() throws ErpException, ErpException, MarcellekeSystemException {
 
         Object[] requestedFields = {
             OdooDefaults.FIELD_ID,
@@ -593,7 +608,7 @@ public class OdooERPConnector implements ErpSpecificConnectorInterface {
             newWork.setInss(e);
 
             newWork.setCompanyId("873909226");
-        }else{
+        } else {
             newWork.setInss("");
         }
 

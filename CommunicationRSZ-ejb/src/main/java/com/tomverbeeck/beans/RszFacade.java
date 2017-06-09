@@ -24,6 +24,7 @@ import be.socialsecurity.presenceregistration.v1.RegisterPresencesRequest;
 import be.socialsecurity.presenceregistration.v1.RegisterPresencesResponse;
 import be.socialsecurity.presenceregistration.v1.SearchPresencesRequest;
 import be.socialsecurity.presenceregistration.v1.SystemError;
+import com.arnowouter.javaodoo.exceptions.OdooConnectorException;
 import com.arnowouter.marcelleke.ejb.connectors.odoo.OdooERPConnector;
 import com.arnowouter.marcelleke.ejb.exceptions.ErpException;
 import com.arnowouter.marcelleke.ejb.exceptions.MarcellekeSystemException;
@@ -245,7 +246,7 @@ public class RszFacade extends AbstractFacade<Rsz> {
         }
     }
 
-    public RegisterPresencesResponse processRegisterPresence(RegisterPresencesResponse responseList) {
+    public RegisterPresencesResponse processRegisterPresence(RegisterPresencesResponse responseList) throws OdooConnectorException {
         if (responseList.getPresenceRegistrationResponse() == null) {
             System.out.println("Error REGISTER received");
             return new RegisterPresencesResponse();
@@ -272,6 +273,7 @@ public class RszFacade extends AbstractFacade<Rsz> {
                 }
 
                 System.out.println("Ent is " + ent.toString());
+                //test.writeToOdoo(ent);
                 registeredBean.create(ent);
                 continue;
             } else if (response.getPresenceRegistration() == null) {
@@ -305,7 +307,8 @@ public class RszFacade extends AbstractFacade<Rsz> {
                     Logger.getLogger(RszFacade.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            System.out.println("Entitty is " + entity.toString());
+            System.out.println("Entity is " + entity.toString());
+            //test.writeToOdoo(ent);
             registeredBean.create(entity);
 
         }

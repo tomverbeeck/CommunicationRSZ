@@ -49,6 +49,7 @@ public class OdooDefaults {
     public final static String MODEL_ANALYTIC_ACCOUNTS = "account.analytic.account";
     public static final String MODEL_SALES_TEAM = "crm.case.section";
     public static final String MODEL_WORK_ORDERS = "project.task.work";
+    public static final String MODEL_CHECKINATWORK = "checkinatwork";
 
     // FIELDS
     // FIELDS
